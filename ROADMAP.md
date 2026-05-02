@@ -47,9 +47,10 @@
 
 ## Phase 5 - Chat and folders
 
-- [ ] Implement per-user conversations and folders.
-- [ ] Add server-stored conversation mode.
-- [ ] Add local-only conversation mode with IndexedDB and clear warnings.
+- [x] Implement per-user conversation and folder contracts.
+- [x] Add server-stored conversation mode contract.
+- [x] Add local-only conversation mode contract.
+- [ ] Implement browser IndexedDB local-only storage and clear warnings.
 - [ ] Stream responses through LiteLLM.
 - [ ] Add export and import.
 - [ ] Display calm reasoning summaries without exposing hidden chain-of-thought.

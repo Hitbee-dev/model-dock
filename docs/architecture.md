@@ -36,6 +36,8 @@ This page is for contributors and operators deciding where a feature belongs.
 | Weaviate | Tenant-scoped vector search for RAG |
 | S3-compatible storage | Documents, attachments, exports, backups |
 
+Chat storage contracts live in `@modeldock/chat`. Server-stored conversations persist message content in the database. Local-only conversations keep message content in browser storage and store only metadata server-side when needed.
+
 ## Security caveats
 
 The LiteLLM master key is server-only. Admin routes must fail closed outside the configured admin host.
