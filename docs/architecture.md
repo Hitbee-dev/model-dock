@@ -32,6 +32,9 @@ This page is for contributors and operators deciding where a feature belongs.
 | Admin app | Users, providers, credits, audit logs, system settings |
 | LiteLLM | Provider routing, virtual keys, budgets, spend tracking |
 | Postgres | Persistent ModelDock and LiteLLM state |
+| Redis | Sessions, cache, rate-limit counters, short-lived jobs |
+| Weaviate | Tenant-scoped vector search for RAG |
+| S3-compatible storage | Documents, attachments, exports, backups |
 
 ## Security caveats
 
@@ -40,6 +43,7 @@ The LiteLLM master key is server-only. Admin routes must fail closed outside the
 ## Related links
 
 - [LiteLLM](litellm.md)
+- [Storage and RAG](storage-rag.md)
 - [Security](security.md)
 - [Cloudflare deployment](deployment/cloudflare.md)
 

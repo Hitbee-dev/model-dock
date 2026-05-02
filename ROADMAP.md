@@ -9,6 +9,7 @@
 ## Phase 1 - Installable skeleton
 
 - [x] Add Docker Compose with Postgres, LiteLLM, web, admin, and API services.
+- [x] Add Redis, Weaviate, and S3-compatible object storage scaffolding for RAG.
 - [x] Bind host-published services to `127.0.0.1` by default.
 - [x] Add `modeldock init` CLI placeholder.
 - [x] Add environment validation package.
@@ -51,6 +52,14 @@
 - [ ] Stream responses through LiteLLM.
 - [ ] Add export and import.
 - [ ] Display calm reasoning summaries without exposing hidden chain-of-thought.
+
+## Phase 5.5 - RAG
+
+- [x] Add RAG package contracts, chunking, and Weaviate retrieval planning.
+- [ ] Implement document upload ingestion.
+- [ ] Implement embedding generation through server-side provider routes.
+- [ ] Implement tenant-scoped retrieval injection for chat.
+- [ ] Add deletion propagation from object storage, PostgreSQL metadata, and Weaviate.
 
 ## Phase 6 - MCP and skills
 
