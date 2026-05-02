@@ -31,9 +31,10 @@
 
 - [x] Implement LiteLLM user creation contract.
 - [x] Implement virtual key generation contract.
-- [ ] Map ModelDock credits to LiteLLM budgets.
-- [ ] Enforce model allowlists.
-- [ ] Add spend sync job.
+- [x] Map ModelDock credits to LiteLLM budgets.
+- [x] Enforce model allowlist contract.
+- [x] Add spend sync ledger contract.
+- [ ] Add live spend sync job.
 - [ ] Add mock and live LiteLLM integration tests.
 
 ## Phase 4 - BYOK and provider vault
