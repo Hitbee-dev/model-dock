@@ -1,7 +1,9 @@
 import { createServer } from "node:http";
+import { renderHomePage, renderSignupPage } from "./pages.js";
 
 const port = Number(process.env.PORT ?? 3000);
 const host = process.env.HOST ?? "127.0.0.1";
+const apiUrl = process.env.PUBLIC_API_URL ?? "http://127.0.0.1:3002";
 
 const server = createServer((request, response) => {
   if (request.url === "/healthz") {
@@ -10,8 +12,14 @@ const server = createServer((request, response) => {
     return;
   }
 
-  response.writeHead(200, { "content-type": "text/plain; charset=utf-8" });
-  response.end("ModelDock web app placeholder. User chat UI will land in Phase 5.\n");
+  if (request.url === "/signup") {
+    response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    response.end(renderSignupPage(apiUrl));
+    return;
+  }
+
+  response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+  response.end(renderHomePage());
 });
 
 server.listen(port, host, () => {

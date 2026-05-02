@@ -19,6 +19,17 @@ This page is for operators, contributors, and security reviewers.
 - Production mode must reject placeholder secrets.
 - Provider credentials and OAuth tokens are encrypted at rest.
 - Chat content and secrets are not logged.
+- Admin API approval routes require a trusted admin-host header from a controlled proxy plus an admin API token. The public API must not trust client-supplied `Host` headers for admin separation.
+
+## Production secret preflight
+
+Before any production deployment, run:
+
+```bash
+pnpm security:env
+```
+
+This fails if service-owned secrets such as Postgres, Redis, Weaviate, object storage, LiteLLM, session, encryption, owner bootstrap, or admin API credentials are missing or still use `replace-with-*` placeholders.
 
 ## Subscription OAuth warning
 

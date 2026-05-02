@@ -1,6 +1,6 @@
 # Storage and RAG
 
-ModelDock uses separate storage systems for separate jobs.
+ModelDock uses separate storage systems for separate jobs. RAG is baseline infrastructure for ModelDock, not an optional compose profile.
 
 ## Storage roles
 
