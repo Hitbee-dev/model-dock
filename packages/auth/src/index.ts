@@ -2,8 +2,34 @@ export type ModelDockRole = "owner" | "admin" | "operator" | "user";
 
 export const adminRoles = ["owner", "admin"] as const;
 
+export const modelDockRoles: readonly ModelDockRole[] = ["owner", "admin", "operator", "user"];
+
 export function canAccessAdmin(role: ModelDockRole): boolean {
   return role === "owner" || role === "admin";
+}
+
+export type OwnerBootstrapState = {
+  ownerExists: boolean;
+  bootstrapTokenHash?: string;
+};
+
+export function canBootstrapOwner(input: {
+  state: OwnerBootstrapState;
+  providedTokenHash: string;
+}): boolean {
+  if (input.state.ownerExists) {
+    return false;
+  }
+
+  return Boolean(input.state.bootstrapTokenHash && input.state.bootstrapTokenHash === input.providedTokenHash);
+}
+
+export function assertRole(value: string): ModelDockRole {
+  if (!modelDockRoles.includes(value as ModelDockRole)) {
+    throw new Error("Unknown ModelDock role.");
+  }
+
+  return value as ModelDockRole;
 }
 
 export type PendingRegistration = {
