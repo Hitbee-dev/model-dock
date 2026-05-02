@@ -1,0 +1,27 @@
+{
+  "name": "@modeldock/web",
+  "version": "0.0.0",
+  "description": "ModelDock user-facing web app package.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/server.js",
+  "types": "./dist/server.d.ts",
+  "files": [
+    "dist/server.d.ts",
+    "dist/server.js",
+    "dist/server.js.map",
+    "README.md",
+    "package.json"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "dev": "tsx src/server.ts",
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

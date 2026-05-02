@@ -1,0 +1,33 @@
+{
+  "name": "model-dock",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Open-source control plane for self-hosted multi-user LLM apps: dock providers, BYOK keys, credits, budgets, and chat UIs on LiteLLM.",
+  "license": "MIT",
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "dev": "pnpm -r --parallel --if-present dev",
+    "build": "pnpm -r --if-present build",
+    "lint": "node scripts/lint-placeholder.mjs",
+    "format": "node scripts/format-placeholder.mjs",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "test": "pnpm -r --if-present test",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,cjs,mjs,json,md,yml,yaml}": [
+      "pnpm lint"
+    ]
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^19.6.1",
+    "@commitlint/config-conventional": "^19.6.0",
+    "@types/node": "^22.10.7",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.11",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3",
+    "vitest": "^2.1.8"
+  }
+}

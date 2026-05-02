@@ -1,0 +1,33 @@
+# ModelDock Full LLM Summary
+
+ModelDock is an open-source control plane for self-hosted multi-user LLM apps. It combines a user chat surface, BYOK provider credential flows, user credits, budgets, admin workflows, MCP, skills, deployment templates, and LiteLLM routing into one deployable service.
+
+## Architecture
+
+ModelDock uses separate web, API, and admin surfaces. The API orchestrates auth, user profiles, chat metadata/content when server-stored, BYOK credential vault records, credit ledger records, and LiteLLM users/virtual keys. LiteLLM remains the provider gateway for OpenAI, Anthropic, Gemini, OpenRouter, Ollama, vLLM, and OpenAI-compatible endpoints.
+
+## Security model
+
+Defaults are local-only. Web, admin, and API bind to localhost in Docker Compose. Postgres and LiteLLM are internal-only. Admin must be deployed on a separate protected hostname in production. Provider keys and OAuth tokens must be encrypted at rest and never logged. LiteLLM master keys are server-only.
+
+## Provider strategy
+
+Official support is API-key and OpenAI-compatible provider access through LiteLLM. Subscription OAuth adapters are experimental, disabled by default, per-user only, and never positioned as a way to bypass provider billing or terms.
+
+## Current limitations
+
+The repository is in bootstrap scaffold state. Auth, owner bootstrap, real database migrations, BYOK UI, chat, MCP execution, and full LiteLLM API integration are planned roadmap work.
+
+## Canonical docs
+
+- `README.md`
+- `docs/quickstart.md`
+- `docs/architecture.md`
+- `docs/litellm.md`
+- `docs/byok.md`
+- `docs/credits.md`
+- `docs/security.md`
+- `docs/deployment/cloudflare.md`
+- `docs/comparisons/openwebui.md`
+- `docs/comparisons/librechat.md`
+- `docs/comparisons/litellm.md`
