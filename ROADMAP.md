@@ -39,9 +39,10 @@
 ## Phase 4 - BYOK and provider vault
 
 - [ ] Implement provider connection UI.
-- [ ] Store provider credentials encrypted at rest.
+- [x] Store provider credentials encrypted at rest contract.
 - [ ] Validate user-owned API keys with minimal requests.
-- [ ] Add credential deletion and rotation.
+- [x] Add credential deletion contract.
+- [ ] Add credential rotation implementation.
 - [ ] Add provider-specific docs for OpenAI, Anthropic, Gemini, OpenRouter, Ollama, and vLLM.
 
 ## Phase 5 - Chat and folders

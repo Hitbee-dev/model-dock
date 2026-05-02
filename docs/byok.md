@@ -22,7 +22,7 @@ This page is for users connecting provider credentials and contributors implemen
 
 ## Security caveats
 
-Provider keys must not be logged, returned to the browser after save, or stored in plaintext.
+Provider keys must not be logged, returned to the browser after save, or stored in plaintext. The browser receives a credential reference, not the plaintext provider key or encrypted ciphertext.
 
 ## Related links
 
