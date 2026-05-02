@@ -50,12 +50,25 @@ function normalizeBaseUrl(baseUrl: string): string {
 }
 
 function userPayload(request: LiteLLMUserCreateRequest): Record<string, unknown> {
+  if (request.modelAllowlist && request.modelAllowlist.length === 0) {
+    throw new Error("LiteLLM model allowlist cannot be empty.");
+  }
+
   return {
     user_id: request.userId,
     max_budget: request.maxBudgetUsd,
     budget_duration: request.budgetDuration,
     models: request.modelAllowlist
   };
+}
+
+export function createModelAllowlist(models: string[]): string[] {
+  const unique = [...new Set(models.map((model) => model.trim()).filter(Boolean))];
+  if (unique.length === 0) {
+    throw new Error("At least one model must be allowed.");
+  }
+
+  return unique;
 }
 
 async function postJson(options: LiteLLMClientOptions, path: string, body: Record<string, unknown>): Promise<unknown> {

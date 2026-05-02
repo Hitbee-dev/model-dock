@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { createLiteLLMClient, createLiteLLMHeaders, renderLiteLLMConfig, type LiteLLMFetch } from "./index.js";
+import {
+  createLiteLLMClient,
+  createLiteLLMHeaders,
+  createModelAllowlist,
+  renderLiteLLMConfig,
+  type LiteLLMFetch
+} from "./index.js";
 
 describe("LiteLLM helpers", () => {
   it("keeps the master key server-side in authorization headers", () => {
@@ -55,5 +61,13 @@ describe("LiteLLM helpers", () => {
     await expect(client.createVirtualKey({ userId: "user_1", keyAlias: "missing-key" })).rejects.toThrow(
       "virtual key"
     );
+  });
+
+  it("normalizes model allowlists and rejects empty lists", () => {
+    expect(createModelAllowlist([" gpt-4o-mini ", "gpt-4o-mini", "claude-3-5-haiku"])).toEqual([
+      "gpt-4o-mini",
+      "claude-3-5-haiku"
+    ]);
+    expect(() => createModelAllowlist([" "])).toThrow("At least one model");
   });
 });
