@@ -1,0 +1,87 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-modeldock}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-replace-with-local-db-password}
+      POSTGRES_DB: ${POSTGRES_DB:-modeldock}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  litellm:
+    image: ghcr.io/berriai/litellm:${LITELLM_VERSION:-v1.57.8}
+    command: ["--config", "/app/config.yaml", "--host", "0.0.0.0", "--port", "4000"]
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-replace-with-strong-litellm-master-key}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://modeldock:replace-with-local-db-password@postgres:5432/modeldock}
+      STORE_MODEL_IN_DB: "True"
+      UI_USERNAME: disabled
+      UI_PASSWORD: disabled
+    volumes:
+      - ./docker/litellm.config.yaml:/app/config.yaml:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "4000"
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/node-app.Dockerfile
+      args:
+        APP_PATH: apps/web
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://127.0.0.1:3000}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-http://127.0.0.1:3002}
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      - api
+
+  admin:
+    build:
+      context: .
+      dockerfile: docker/node-app.Dockerfile
+      args:
+        APP_PATH: apps/admin
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3001
+      ADMIN_APP_URL: ${ADMIN_APP_URL:-http://127.0.0.1:3001}
+    ports:
+      - "127.0.0.1:3001:3001"
+    depends_on:
+      - api
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/node-app.Dockerfile
+      args:
+        APP_PATH: apps/api
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3002
+      DATABASE_URL: ${DATABASE_URL:-postgresql://modeldock:replace-with-local-db-password@postgres:5432/modeldock}
+      LITELLM_BASE_URL: ${LITELLM_BASE_URL:-http://litellm:4000}
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-replace-with-strong-litellm-master-key}
+      PUBLIC_REGISTRATION_ENABLED: ${PUBLIC_REGISTRATION_ENABLED:-false}
+      LOG_CHAT_CONTENT: ${LOG_CHAT_CONTENT:-false}
+    ports:
+      - "127.0.0.1:3002:3002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      litellm:
+        condition: service_started
+
+volumes:
+  postgres-data:

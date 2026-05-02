@@ -1,0 +1,77 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Secrets
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+secrets/
+credentials/
+service-account*.json
+cloudflare-token*.json
+
+# Local AI agent tooling
+.omc/
+.omx/
+.omc*
+.omx*
+.codex/
+.claude/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Node / package managers
+node_modules/
+.pnpm-store/
+.yarn/
+.npm/
+dist/
+build/
+.next/
+.nuxt/
+.svelte-kit/
+.turbo/
+.vercel/
+coverage/
+
+# Python, for scripts or LiteLLM helpers
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Database / local state
+*.sqlite
+*.sqlite3
+*.db
+data/
+.storage/
+.local-state/
+
+# Docker / local infra
+docker-compose.override.yml
+docker-compose.local.yml
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json
+
+# Generated assets metadata that may contain private prompts, unless intentionally public
+assets/private/

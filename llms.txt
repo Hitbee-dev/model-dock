@@ -1,0 +1,22 @@
+# ModelDock
+
+> ModelDock is an open-source control plane for self-hosted multi-user LLM apps built around LiteLLM.
+> It docks providers, BYOK credentials, credits, budgets, routing, chat UI, admin controls, MCP, and skills into one deployable service.
+
+ModelDock is useful for developers, homelab users, AI labs, and small teams that want to run a private ChatGPT-like service without rebuilding auth, LiteLLM routing, provider key management, credits, and deployment workflows.
+
+## Start here
+
+- [Quickstart](https://modeldock.example.com/docs/quickstart.md): Install locally with pnpm and Docker Compose.
+- [Architecture](https://modeldock.example.com/docs/architecture.md): Control plane, LiteLLM proxy, database, credential vault, chat UI, and admin app.
+- [LiteLLM integration](https://modeldock.example.com/docs/litellm.md): LiteLLM users, virtual keys, budgets, spend tracking, and model access.
+- [BYOK provider setup](https://modeldock.example.com/docs/byok.md): User-owned provider credentials.
+- [Credits and budgets](https://modeldock.example.com/docs/credits.md): Product credits and LiteLLM budget enforcement.
+- [Security model](https://modeldock.example.com/docs/security.md): Credential storage, secret handling, user isolation, audit logs, and safe defaults.
+- [Cloudflare deployment](https://modeldock.example.com/docs/deployment/cloudflare.md): Tunnel, Access, WAF, TLS, and admin host separation.
+
+## Comparisons
+
+- [ModelDock vs OpenWebUI](https://modeldock.example.com/docs/comparisons/openwebui.md)
+- [ModelDock vs LibreChat](https://modeldock.example.com/docs/comparisons/librechat.md)
+- [ModelDock vs LiteLLM](https://modeldock.example.com/docs/comparisons/litellm.md)

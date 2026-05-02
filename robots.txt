@@ -1,0 +1,61 @@
+# ModelDock robots.txt
+# Public docs are crawlable. Private surfaces require authentication; robots.txt is not security.
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /login
+Disallow: /signup
+Disallow: /settings/
+Disallow: /dashboard/
+Disallow: /user/
+Disallow: /billing/
+Disallow: /telemetry/
+Disallow: /internal/
+Disallow: /private/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /private/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /private/
+
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /private/
+
+User-agent: Claude-User
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /private/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /private/
+
+User-agent: Perplexity-User
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /private/
+
+Sitemap: https://modeldock.example.com/sitemap.xml
