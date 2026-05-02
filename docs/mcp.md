@@ -6,6 +6,8 @@ ModelDock will make MCP server configuration easy and safe.
 
 MCP support lets users configure tools with explicit permission prompts, per-user settings, and audit metadata without leaking secrets.
 
+MCP server registration and permission contracts live in `@modeldock/mcp`. Tool execution is denied unless a matching permission decision allows it.
+
 ## Planned features
 
 - MCP server registry UI.

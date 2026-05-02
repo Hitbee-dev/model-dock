@@ -6,6 +6,8 @@ ModelDock skills are human-readable operational units.
 
 A skill contains documentation and optional metadata, examples, scripts, or fixtures. Skills must declare permissions and be easy to inspect, disable, and document.
 
+Skill manifests live behind `@modeldock/skills`. Any skill requesting network, filesystem, shell, credentials, or provider token access must be disabled by default.
+
 ## Planned layout
 
 ```text
