@@ -29,8 +29,8 @@
 
 ## Phase 3 - LiteLLM integration
 
-- [ ] Implement LiteLLM user creation.
-- [ ] Implement virtual key generation.
+- [x] Implement LiteLLM user creation contract.
+- [x] Implement virtual key generation contract.
 - [ ] Map ModelDock credits to LiteLLM budgets.
 - [ ] Enforce model allowlists.
 - [ ] Add spend sync job.

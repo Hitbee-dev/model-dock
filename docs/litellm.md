@@ -14,6 +14,8 @@ Use this page when implementing gateway behavior, provider routes, budgets, or s
 
 Keep LiteLLM code in `packages/litellm`.
 
+`@modeldock/litellm` is the isolation package for LiteLLM API calls and config rendering. Future LiteLLM endpoint changes should be handled there first, with API, web, and admin callers using its stable ModelDock-facing contracts.
+
 Initial responsibilities:
 
 - Render LiteLLM config from ModelDock route records.
