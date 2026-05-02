@@ -4,6 +4,15 @@ export type ModelDockEnv = {
   publicApiUrl: string;
   adminAppUrl: string;
   databaseUrl: string;
+  redisUrl: string;
+  ragEnabled: boolean;
+  weaviateUrl: string;
+  weaviateApiKey: string;
+  s3Endpoint: string;
+  s3Region: string;
+  s3Bucket: string;
+  s3AccessKeyId: string;
+  s3SecretAccessKey: string;
   sessionSecret: string;
   credentialEncryptionKey: string;
   credentialEncryptionKeyId: string;
@@ -37,6 +46,15 @@ export function validateModelDockEnv(source: NodeJS.ProcessEnv): ModelDockEnv {
     publicApiUrl: requireValue(source, "PUBLIC_API_URL"),
     adminAppUrl: requireValue(source, "ADMIN_APP_URL"),
     databaseUrl: requireValue(source, "DATABASE_URL"),
+    redisUrl: requireValue(source, "REDIS_URL"),
+    ragEnabled: source.RAG_ENABLED !== "false",
+    weaviateUrl: source.RAG_ENABLED === "false" ? "" : requireValue(source, "WEAVIATE_URL"),
+    weaviateApiKey: source.RAG_ENABLED === "false" ? "" : requireValue(source, "WEAVIATE_API_KEY"),
+    s3Endpoint: source.RAG_ENABLED === "false" ? "" : requireValue(source, "S3_ENDPOINT"),
+    s3Region: source.S3_REGION ?? "us-east-1",
+    s3Bucket: source.RAG_ENABLED === "false" ? "" : requireValue(source, "S3_BUCKET"),
+    s3AccessKeyId: source.RAG_ENABLED === "false" ? "" : requireValue(source, "S3_ACCESS_KEY_ID"),
+    s3SecretAccessKey: source.RAG_ENABLED === "false" ? "" : requireValue(source, "S3_SECRET_ACCESS_KEY"),
     sessionSecret: requireValue(source, "SESSION_SECRET"),
     credentialEncryptionKey: requireValue(source, "CREDENTIAL_ENCRYPTION_KEY"),
     credentialEncryptionKeyId: source.CREDENTIAL_ENCRYPTION_KEY_ID ?? "default-v1",
@@ -51,6 +69,10 @@ export function validateModelDockEnv(source: NodeJS.ProcessEnv): ModelDockEnv {
   if (nodeEnv === "production") {
     for (const value of [
       config.databaseUrl,
+      config.redisUrl,
+      config.weaviateApiKey,
+      config.s3AccessKeyId,
+      config.s3SecretAccessKey,
       config.sessionSecret,
       config.credentialEncryptionKey,
       config.ownerBootstrapToken,

@@ -1,0 +1,14 @@
+{
+  "name": "@modeldock/rag",
+  "version": "0.0.0",
+  "description": "ModelDock RAG indexing and retrieval contracts for Weaviate.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  }
+}

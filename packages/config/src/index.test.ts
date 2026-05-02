@@ -6,6 +6,14 @@ const baseEnv = {
   PUBLIC_API_URL: "http://127.0.0.1:3002",
   ADMIN_APP_URL: "http://127.0.0.1:3001",
   DATABASE_URL: "postgresql://modeldock:pass@postgres:5432/modeldock",
+  REDIS_URL: "redis://:pass@redis:6379/0",
+  RAG_ENABLED: "true",
+  WEAVIATE_URL: "http://weaviate:8080",
+  WEAVIATE_API_KEY: "replace-with-local-weaviate-app-key",
+  S3_ENDPOINT: "http://objectstore:8333",
+  S3_BUCKET: "modeldock-local",
+  S3_ACCESS_KEY_ID: "replace-with-local-s3-access-key",
+  S3_SECRET_ACCESS_KEY: "replace-with-local-s3-secret-key",
   SESSION_SECRET: "replace-with-strong-random-session-secret",
   CREDENTIAL_ENCRYPTION_KEY: "replace-with-strong-random-32-byte-key",
   OWNER_BOOTSTRAP_TOKEN: "replace-with-one-time-local-bootstrap-token",
@@ -28,5 +36,9 @@ describe("validateModelDockEnv", () => {
         NODE_ENV: "production"
       })
     ).toThrow("placeholder secrets");
+  });
+
+  it("allows RAG infrastructure to be disabled explicitly", () => {
+    expect(validateModelDockEnv({ ...baseEnv, RAG_ENABLED: "false" }).ragEnabled).toBe(false);
   });
 });
