@@ -20,11 +20,11 @@
 
 ## Phase 2 - Auth and owner bootstrap
 
-- [ ] Implement one-time owner bootstrap backed by `OWNER_BOOTSTRAP_TOKEN`.
+- [x] Implement one-time owner bootstrap contract backed by `OWNER_BOOTSTRAP_TOKEN`.
 - [ ] Add local login or OIDC-ready auth.
-- [ ] Add role model: owner, admin, operator, user.
+- [x] Add role model: owner, admin, operator, user.
 - [ ] Add session security, CSRF protection, secure cookies, and auth rate limits.
-- [ ] Enforce admin-host checks in API and admin app.
+- [x] Enforce trusted admin-host checks in API scaffold.
 - [ ] Add Cloudflare Access validation middleware.
 
 ## Phase 3 - LiteLLM integration
