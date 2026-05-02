@@ -65,10 +65,10 @@
 
 ## Phase 6 - MCP and skills
 
-- [ ] Add MCP server registry.
-- [ ] Add per-user MCP configuration.
-- [ ] Require permission before tool execution.
-- [ ] Add skill registry foundation and permission declarations.
+- [x] Add MCP server registry contract.
+- [x] Add per-user MCP configuration contract.
+- [x] Require permission before tool execution.
+- [x] Add skill registry foundation and permission declarations.
 
 ## Phase 7 - External visibility
 

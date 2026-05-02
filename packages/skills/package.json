@@ -1,0 +1,14 @@
+{
+  "name": "@modeldock/skills",
+  "version": "0.0.0",
+  "description": "ModelDock skill registry and permission declaration contracts.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  }
+}
