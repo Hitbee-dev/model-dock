@@ -133,7 +133,6 @@ services:
       NODE_ENV: ${NODE_ENV:-development}
       DATABASE_URL: ${DATABASE_URL:-postgresql://modeldock:replace-with-local-db-password@postgres:5432/modeldock}
       REDIS_URL: ${REDIS_URL:-redis://:replace-with-local-redis-password@redis:6379/0}
-      RAG_ENABLED: ${RAG_ENABLED:-true}
       WEAVIATE_URL: ${WEAVIATE_URL:-http://weaviate:8080}
       WEAVIATE_API_KEY: ${WEAVIATE_API_KEY:-replace-with-local-weaviate-app-key}
       S3_ENDPOINT: ${S3_ENDPOINT:-http://objectstore:8333}
@@ -144,6 +143,7 @@ services:
       LITELLM_BASE_URL: ${LITELLM_BASE_URL:-http://litellm:4000}
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-replace-with-strong-litellm-master-key}
       PUBLIC_REGISTRATION_ENABLED: ${PUBLIC_REGISTRATION_ENABLED:-false}
+      ADMIN_API_TOKEN: ${ADMIN_API_TOKEN:-replace-with-strong-admin-api-token}
       LOG_CHAT_CONTENT: ${LOG_CHAT_CONTENT:-false}
     ports:
       - "127.0.0.1:3002:3002"
