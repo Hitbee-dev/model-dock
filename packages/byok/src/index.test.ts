@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   createCredentialRef,
+  createProviderValidationPlan,
   credentialEncryptionContext,
   deleteCredential,
   isSubscriptionOAuthEnabled,
   storeProviderCredential,
   toCredentialResponse,
+  validateProviderConnection,
   validateProviderCredential
 } from "./index.js";
 
@@ -65,5 +67,42 @@ describe("BYOK contracts", () => {
       })
     ).toContain("cred_1");
     expect(toCredentialResponse(record)).not.toHaveProperty("encryptedSecret");
+  });
+
+  it("builds minimal provider validation plans without exposing keys in URLs", () => {
+    const plan = createProviderValidationPlan({
+      provider: "openai",
+      apiKey: "sk-test"
+    });
+
+    expect(plan.url).toBe("https://api.openai.com/v1/models");
+    expect(plan.url).not.toContain("sk-test");
+    expect(plan.headers.authorization).toBe("Bearer sk-test");
+  });
+
+  it("requires HTTPS for remote custom validation endpoints", () => {
+    expect(() =>
+      createProviderValidationPlan({
+        provider: "custom",
+        apiKey: "token",
+        endpoint: "http://api.example.com/v1/models"
+      })
+    ).toThrow("HTTPS");
+  });
+
+  it("validates provider connections through an injected fetch", async () => {
+    const result = await validateProviderConnection({
+      request: {
+        provider: "anthropic",
+        apiKey: "anthropic-key"
+      },
+      async fetch(url, init) {
+        expect(url).toBe("https://api.anthropic.com/v1/models");
+        expect(init.headers["x-api-key"]).toBe("anthropic-key");
+        return { status: 200 };
+      }
+    });
+
+    expect(result.ok).toBe(true);
   });
 });

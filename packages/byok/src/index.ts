@@ -1,5 +1,7 @@
 export type ProviderKind = "openai" | "anthropic" | "gemini" | "openrouter" | "ollama" | "vllm" | "custom";
 
+export * from "./validation.js";
+
 export type ProviderCredentialCiphertext = {
   keyId: string;
   algorithm: "aes-256-gcm-envelope";
