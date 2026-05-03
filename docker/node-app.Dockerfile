@@ -3,18 +3,23 @@ FROM node:22-alpine AS build
 ARG APP_PATH
 WORKDIR /workspace
 
-COPY package.json pnpm-workspace.yaml tsconfig.base.json ./
-COPY ${APP_PATH}/package.json ${APP_PATH}/tsconfig.json ./${APP_PATH}/
-COPY ${APP_PATH}/src ./${APP_PATH}/src
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
+COPY apps ./apps
+COPY packages ./packages
+COPY cli ./cli
 
-RUN corepack enable && corepack pnpm install --prod=false --frozen-lockfile=false && corepack pnpm --filter "./${APP_PATH}" build
+RUN corepack enable \
+  && corepack pnpm install --prod=false --frozen-lockfile \
+  && corepack pnpm --filter "./${APP_PATH}" build
 
 FROM node:22-alpine AS runtime
 
 ARG APP_PATH
-WORKDIR /app
+WORKDIR /workspace/${APP_PATH}
 ENV NODE_ENV=production
 
-COPY --from=build /workspace/${APP_PATH}/dist ./dist
+COPY --from=build /workspace /workspace
+
+USER node
 
 CMD ["node", "dist/server.js"]

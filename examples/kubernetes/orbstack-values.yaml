@@ -1,0 +1,50 @@
+global:
+  production: false
+  imagePullPolicy: IfNotPresent
+  storageClassName: ""
+
+urls:
+  publicSiteUrl: http://127.0.0.1:3000
+  publicAppUrl: http://127.0.0.1:3000
+  publicApiUrl: http://127.0.0.1:3002
+  adminAppUrl: http://127.0.0.1:3001
+  trustedOrigins: http://127.0.0.1:3000,http://127.0.0.1:3001,http://127.0.0.1:3002
+
+workloads:
+  web:
+    image:
+      repository: modeldock/web
+      tag: local
+  admin:
+    image:
+      repository: modeldock/admin
+      tag: local
+  api:
+    image:
+      repository: modeldock/api
+      tag: local
+
+allInOne:
+  enabled: true
+
+config:
+  nodeEnv: development
+  publicRegistrationEnabled: "false"
+  adminBootstrapEnabled: "true"
+  experimentalSubscriptionOauth: "true"
+  experimentalChatgptSubscription: "true"
+  experimentalClaudeSubscription: "false"
+  cloudflareAccessEnabled: "false"
+
+secrets:
+  postgresPassword: local-postgres-password-change-me
+  redisPassword: local-redis-password-change-me
+  weaviateApiKey: local-weaviate-app-key-change-me
+  weaviateRootApiKey: local-weaviate-root-key-change-me
+  s3AccessKeyId: local-s3-access-key-change-me
+  s3SecretAccessKey: local-s3-secret-key-change-me
+  sessionSecret: local-session-secret-change-me-32-bytes
+  credentialEncryptionKey: local-credential-key-change-me-32b
+  ownerBootstrapToken: local-owner-bootstrap-token-change-me
+  adminApiToken: local-admin-api-token-change-me
+  litellmMasterKey: local-litellm-master-key-change-me

@@ -19,7 +19,34 @@ spec:
         app.kubernetes.io/component: litellm
     spec:
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        {{- toYaml .Values.litellm.podSecurityContext | nindent 8 }}
+      {{- if and .Values.allInOne.enabled .Values.allInOne.postgres.enabled }}
+      initContainers:
+        - name: litellm-database-bootstrap
+          image: "{{ .Values.allInOne.postgres.image.repository }}:{{ .Values.allInOne.postgres.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          command:
+            - sh
+            - /bootstrap/10-modeldock-databases.sh
+          env:
+            - name: PGHOST
+              value: {{ include "modeldock.postgresName" . | quote }}
+            - name: PGPORT
+              value: {{ .Values.allInOne.postgres.port | quote }}
+            - name: POSTGRES_USER
+              value: {{ .Values.allInOne.postgres.username | quote }}
+            - name: LITELLM_POSTGRES_DB
+              value: {{ .Values.allInOne.postgres.litellmDatabase | quote }}
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "modeldock.secretName" . }}
+                  key: POSTGRES_PASSWORD
+          volumeMounts:
+            - name: postgres-init
+              mountPath: /bootstrap
+              readOnly: true
+      {{- end }}
       containers:
         - name: litellm
           image: "{{ .Values.litellm.image.repository }}:{{ .Values.litellm.image.tag }}"
@@ -32,7 +59,7 @@ spec:
             - --port
             - {{ .Values.litellm.port | quote }}
           securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
+            {{- toYaml .Values.litellm.securityContext | nindent 12 }}
           ports:
             - name: http
               containerPort: {{ .Values.litellm.port }}
@@ -48,14 +75,31 @@ spec:
             httpGet:
               path: /health/readiness
               port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /health/liveliness
               port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            failureThreshold: 6
+          startupProbe:
+            httpGet:
+              path: /health/liveliness
+              port: http
+            periodSeconds: 5
+            failureThreshold: 60
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
         - name: litellm-config
           configMap:
             name: {{ include "modeldock.fullname" . }}-litellm-config
+        {{- if and .Values.allInOne.enabled .Values.allInOne.postgres.enabled }}
+        - name: postgres-init
+          configMap:
+            name: {{ include "modeldock.postgresName" . }}-init
+            defaultMode: 0755
+        {{- end }}
 {{- end }}

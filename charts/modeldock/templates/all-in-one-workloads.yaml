@@ -1,0 +1,261 @@
+{{- if .Values.allInOne.enabled }}
+{{- if .Values.allInOne.postgres.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "modeldock.postgresName" . }}
+  labels:
+    {{- include "modeldock.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+spec:
+  serviceName: {{ include "modeldock.postgresName" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "modeldock.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: postgres
+  template:
+    metadata:
+      labels:
+        {{- include "modeldock.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: postgres
+    spec:
+      securityContext:
+        {{- toYaml .Values.allInOne.podSecurityContext | nindent 8 }}
+      containers:
+        - name: postgres
+          image: "{{ .Values.allInOne.postgres.image.repository }}:{{ .Values.allInOne.postgres.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - name: postgres
+              containerPort: {{ .Values.allInOne.postgres.port }}
+          env:
+            - name: POSTGRES_USER
+              value: {{ .Values.allInOne.postgres.username | quote }}
+            - name: POSTGRES_DB
+              value: {{ .Values.allInOne.postgres.database | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "modeldock.secretName" . }}
+                  key: POSTGRES_PASSWORD
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "{{ .Values.allInOne.postgres.username }}"]
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: initdb
+              mountPath: /docker-entrypoint-initdb.d
+              readOnly: true
+      volumes:
+        - name: initdb
+          configMap:
+            name: {{ include "modeldock.postgresName" . }}-init
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- include "modeldock.storageClassBlock" . | nindent 8 }}
+        resources:
+          requests:
+            storage: {{ .Values.allInOne.postgres.storage.size | quote }}
+---
+{{- end }}
+{{- if .Values.allInOne.redis.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "modeldock.redisName" . }}
+  labels:
+    {{- include "modeldock.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  serviceName: {{ include "modeldock.redisName" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "modeldock.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: redis
+  template:
+    metadata:
+      labels:
+        {{- include "modeldock.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: redis
+    spec:
+      securityContext:
+        {{- toYaml .Values.allInOne.podSecurityContext | nindent 8 }}
+      containers:
+        - name: redis
+          image: "{{ .Values.allInOne.redis.image.repository }}:{{ .Values.allInOne.redis.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          securityContext:
+            {{- toYaml .Values.allInOne.securityContext | nindent 12 }}
+          ports:
+            - name: redis
+              containerPort: {{ .Values.allInOne.redis.port }}
+          command: ["sh", "-c"]
+          args: ["redis-server --appendonly yes --requirepass \"$REDIS_PASSWORD\""]
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "modeldock.secretName" . }}
+                  key: REDIS_PASSWORD
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" ping | grep PONG"]
+          volumeMounts:
+            - name: data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- include "modeldock.storageClassBlock" . | nindent 8 }}
+        resources:
+          requests:
+            storage: {{ .Values.allInOne.redis.storage.size | quote }}
+---
+{{- end }}
+{{- if .Values.allInOne.weaviate.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "modeldock.weaviateName" . }}
+  labels:
+    {{- include "modeldock.labels" . | nindent 4 }}
+    app.kubernetes.io/component: weaviate
+spec:
+  serviceName: {{ include "modeldock.weaviateName" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "modeldock.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: weaviate
+  template:
+    metadata:
+      labels:
+        {{- include "modeldock.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: weaviate
+    spec:
+      securityContext:
+        {{- toYaml .Values.allInOne.podSecurityContext | nindent 8 }}
+      containers:
+        - name: weaviate
+          image: "{{ .Values.allInOne.weaviate.image.repository }}:{{ .Values.allInOne.weaviate.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          securityContext:
+            {{- toYaml .Values.allInOne.securityContext | nindent 12 }}
+          args: ["--host", "0.0.0.0", "--port", "{{ .Values.allInOne.weaviate.port }}", "--scheme", "http"]
+          ports:
+            - name: http
+              containerPort: {{ .Values.allInOne.weaviate.port }}
+            - name: grpc
+              containerPort: {{ .Values.allInOne.weaviate.grpcPort }}
+          env:
+            - name: QUERY_DEFAULTS_LIMIT
+              value: "20"
+            - name: PERSISTENCE_DATA_PATH
+              value: /var/lib/weaviate
+            - name: AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED
+              value: "false"
+            - name: AUTHENTICATION_APIKEY_ENABLED
+              value: "true"
+            - name: AUTHENTICATION_APIKEY_ALLOWED_KEYS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "modeldock.secretName" . }}
+                  key: WEAVIATE_ALLOWED_KEYS
+            - name: AUTHENTICATION_APIKEY_USERS
+              value: root,modeldock_app
+            - name: AUTHORIZATION_ENABLE_RBAC
+              value: "true"
+            - name: AUTHORIZATION_RBAC_ROOT_USERS
+              value: root,modeldock_app
+            - name: CLUSTER_HOSTNAME
+              value: node1
+            - name: DISABLE_TELEMETRY
+              value: "true"
+          readinessProbe:
+            httpGet:
+              path: /v1/.well-known/ready
+              port: http
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/weaviate
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- include "modeldock.storageClassBlock" . | nindent 8 }}
+        resources:
+          requests:
+            storage: {{ .Values.allInOne.weaviate.storage.size | quote }}
+---
+{{- end }}
+{{- if .Values.allInOne.objectstore.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "modeldock.objectstoreName" . }}
+  labels:
+    {{- include "modeldock.labels" . | nindent 4 }}
+    app.kubernetes.io/component: objectstore
+spec:
+  serviceName: {{ include "modeldock.objectstoreName" . }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "modeldock.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: objectstore
+  template:
+    metadata:
+      labels:
+        {{- include "modeldock.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: objectstore
+    spec:
+      securityContext:
+        {{- toYaml .Values.allInOne.podSecurityContext | nindent 8 }}
+      containers:
+        - name: objectstore
+          image: "{{ .Values.allInOne.objectstore.image.repository }}:{{ .Values.allInOne.objectstore.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          securityContext:
+            {{- toYaml .Values.allInOne.securityContext | nindent 12 }}
+          args: ["server", "-dir=/data", "-s3", "-s3.port={{ .Values.allInOne.objectstore.port }}", "-volume.max=0", "-master.volumeSizeLimitMB=1024"]
+          ports:
+            - name: s3
+              containerPort: {{ .Values.allInOne.objectstore.port }}
+          env:
+            - name: AWS_ACCESS_KEY_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "modeldock.secretName" . }}
+                  key: S3_ACCESS_KEY_ID
+            - name: AWS_SECRET_ACCESS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "modeldock.secretName" . }}
+                  key: S3_SECRET_ACCESS_KEY
+          readinessProbe:
+            httpGet:
+              path: /
+              port: s3
+          volumeMounts:
+            - name: data
+              mountPath: /data
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        {{- include "modeldock.storageClassBlock" . | nindent 8 }}
+        resources:
+          requests:
+            storage: {{ .Values.allInOne.objectstore.storage.size | quote }}
+{{- end }}
+{{- end }}

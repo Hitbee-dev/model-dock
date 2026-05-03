@@ -1,6 +1,7 @@
 global:
   production: false
   imagePullPolicy: IfNotPresent
+  storageClassName: ""
 
 urls:
   publicSiteUrl: https://modeldock.example.com
@@ -40,8 +41,20 @@ litellm:
   replicaCount: 1
   image:
     repository: ghcr.io/berriai/litellm
-    tag: v1.57.8
+    tag: v1.80.5-stable
   port: 4000
+  podSecurityContext:
+    runAsNonRoot: false
+    runAsUser: 0
+    runAsGroup: 0
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    capabilities:
+      drop:
+        - ALL
 
 service:
   type: ClusterIP
@@ -76,16 +89,20 @@ config:
   cloudflareAccessTeamDomain: team.cloudflareaccess.com
   cloudflareAccessAllowedAudiences: replace-with-cloudflare-access-audience
   cloudflareAccessAllowedEmails: owner@example.com
-  weaviateUrl: http://modeldock-weaviate:8080
-  s3Endpoint: http://modeldock-objectstore:8333
+  weaviateUrl: ""
+  s3Endpoint: ""
   s3Region: us-east-1
   s3Bucket: modeldock
 
 secrets:
   existingSecret: ""
-  databaseUrl: postgresql://modeldock:replace-with-db-password@postgres:5432/modeldock
-  redisUrl: redis://:replace-with-redis-password@redis:6379/0
+  databaseUrl: ""
+  litellmDatabaseUrl: ""
+  redisUrl: ""
+  postgresPassword: replace-with-db-password
+  redisPassword: replace-with-redis-password
   weaviateApiKey: replace-with-weaviate-app-key
+  weaviateRootApiKey: replace-with-weaviate-root-key
   s3AccessKeyId: replace-with-s3-access-key
   s3SecretAccessKey: replace-with-s3-secret-key
   sessionSecret: replace-with-strong-random-session-secret
@@ -99,10 +116,61 @@ secrets:
   geminiApiKey: ""
   openrouterApiKey: ""
 
+allInOne:
+  enabled: false
+  podSecurityContext:
+    seccompProfile:
+      type: RuntimeDefault
+  securityContext:
+    allowPrivilegeEscalation: false
+    readOnlyRootFilesystem: false
+    capabilities:
+      drop:
+        - ALL
+  postgres:
+    enabled: true
+    image:
+      repository: postgres
+      tag: 16-alpine
+    port: 5432
+    database: modeldock
+    litellmDatabase: litellm
+    username: modeldock
+    storage:
+      size: 2Gi
+  redis:
+    enabled: true
+    image:
+      repository: redis
+      tag: 8.6.2-alpine
+    port: 6379
+    storage:
+      size: 1Gi
+  weaviate:
+    enabled: true
+    image:
+      repository: cr.weaviate.io/semitechnologies/weaviate
+      tag: 1.37.0
+    port: 8080
+    grpcPort: 50051
+    storage:
+      size: 4Gi
+  objectstore:
+    enabled: true
+    image:
+      repository: chrislusf/seaweedfs
+      tag: "3.85"
+    port: 8333
+    storage:
+      size: 4Gi
+
 resources: {}
 
 podSecurityContext:
   runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
   seccompProfile:
     type: RuntimeDefault
 

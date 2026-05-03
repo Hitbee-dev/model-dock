@@ -1,0 +1,80 @@
+{{- if .Values.allInOne.enabled }}
+{{- if .Values.allInOne.postgres.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "modeldock.postgresName" . }}
+  labels:
+    {{- include "modeldock.labels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "modeldock.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: postgres
+  ports:
+    - name: postgres
+      port: {{ .Values.allInOne.postgres.port }}
+      targetPort: postgres
+---
+{{- end }}
+{{- if .Values.allInOne.redis.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "modeldock.redisName" . }}
+  labels:
+    {{- include "modeldock.labels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "modeldock.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: redis
+  ports:
+    - name: redis
+      port: {{ .Values.allInOne.redis.port }}
+      targetPort: redis
+---
+{{- end }}
+{{- if .Values.allInOne.weaviate.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "modeldock.weaviateName" . }}
+  labels:
+    {{- include "modeldock.labels" . | nindent 4 }}
+    app.kubernetes.io/component: weaviate
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "modeldock.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: weaviate
+  ports:
+    - name: http
+      port: {{ .Values.allInOne.weaviate.port }}
+      targetPort: http
+    - name: grpc
+      port: {{ .Values.allInOne.weaviate.grpcPort }}
+      targetPort: grpc
+---
+{{- end }}
+{{- if .Values.allInOne.objectstore.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "modeldock.objectstoreName" . }}
+  labels:
+    {{- include "modeldock.labels" . | nindent 4 }}
+    app.kubernetes.io/component: objectstore
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "modeldock.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: objectstore
+  ports:
+    - name: s3
+      port: {{ .Values.allInOne.objectstore.port }}
+      targetPort: s3
+{{- end }}
+{{- end }}

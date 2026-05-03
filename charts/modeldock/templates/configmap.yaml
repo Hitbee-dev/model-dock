@@ -1,3 +1,8 @@
+{{- include "modeldock.requireProductionUrl" (list . "urls.publicSiteUrl" .Values.urls.publicSiteUrl) -}}
+{{- include "modeldock.requireProductionUrl" (list . "urls.publicAppUrl" .Values.urls.publicAppUrl) -}}
+{{- include "modeldock.requireProductionUrl" (list . "urls.publicApiUrl" .Values.urls.publicApiUrl) -}}
+{{- include "modeldock.requireProductionUrl" (list . "urls.adminAppUrl" .Values.urls.adminAppUrl) -}}
+{{- include "modeldock.requireProductionUrl" (list . "urls.trustedOrigins" .Values.urls.trustedOrigins) -}}
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -24,7 +29,7 @@ data:
   CLOUDFLARE_ACCESS_ALLOWED_AUDIENCES: {{ .Values.config.cloudflareAccessAllowedAudiences | quote }}
   CLOUDFLARE_ACCESS_ALLOWED_EMAILS: {{ .Values.config.cloudflareAccessAllowedEmails | quote }}
   LITELLM_BASE_URL: "http://{{ include "modeldock.fullname" . }}-litellm:{{ .Values.litellm.port }}"
-  WEAVIATE_URL: {{ .Values.config.weaviateUrl | quote }}
-  S3_ENDPOINT: {{ .Values.config.s3Endpoint | quote }}
+  WEAVIATE_URL: {{ include "modeldock.weaviateUrl" . | quote }}
+  S3_ENDPOINT: {{ include "modeldock.s3Endpoint" . | quote }}
   S3_REGION: {{ .Values.config.s3Region | quote }}
   S3_BUCKET: {{ .Values.config.s3Bucket | quote }}

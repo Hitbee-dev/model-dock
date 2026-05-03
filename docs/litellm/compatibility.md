@@ -4,7 +4,7 @@ This table tracks the LiteLLM version range verified with ModelDock.
 
 | ModelDock version | LiteLLM image | Status | Notes |
 | --- | --- | --- | --- |
-| unreleased | `ghcr.io/berriai/litellm:v1.57.8` | Mock verified | Compose config includes LiteLLM; mock proxy tests cover provisioning, virtual keys, and spend sync. |
+| unreleased | `ghcr.io/berriai/litellm:v1.80.5-stable` | Mock verified, image manifest verified | Compose and Helm config include LiteLLM; mock proxy tests cover provisioning, virtual keys, and spend sync. |
 
 ## Next verification steps
 
