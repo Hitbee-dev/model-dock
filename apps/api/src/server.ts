@@ -19,6 +19,12 @@ const server = createServer(
     adminAppUrl: process.env.ADMIN_APP_URL ?? "http://127.0.0.1:3001",
     adminApiToken: process.env.ADMIN_API_TOKEN,
     authStore: createMemoryAuthStore(),
+    cloudflareAccessConfig: {
+      enabled: process.env.CLOUDFLARE_ACCESS_ENABLED === "true",
+      teamDomain: process.env.CLOUDFLARE_ACCESS_TEAM_DOMAIN ?? "",
+      allowedAudiences: (process.env.CLOUDFLARE_ACCESS_ALLOWED_AUDIENCES ?? "").split(",").filter(Boolean),
+      allowedEmails: (process.env.CLOUDFLARE_ACCESS_ALLOWED_EMAILS ?? "").split(",").filter(Boolean)
+    },
     providerValidationFetch: async (url, init) => fetch(url, init),
     rateLimiter: createMemoryRateLimiter(),
     registrations,

@@ -1,9 +1,16 @@
 import { timingSafeEqual } from "node:crypto";
 import type { IncomingMessage } from "node:http";
+import {
+  verifyCloudflareAccess,
+  type CloudflareAccessConfig,
+  type CloudflareAccessVerifier
+} from "@modeldock/auth";
 
 export type AdminGuardOptions = {
   adminAppUrl: string;
   adminApiToken?: string;
+  cloudflareAccessConfig?: CloudflareAccessConfig;
+  cloudflareAccessVerifier?: CloudflareAccessVerifier;
 };
 
 function headerValue(value: string | string[] | undefined): string | undefined {
@@ -29,4 +36,27 @@ export function isAuthorizedAdminRequest(request: IncomingMessage, options: Admi
 
   const providedToken = headerValue(request.headers["x-modeldock-admin-token"]);
   return Boolean(providedToken && isAdminHost(request, options.adminAppUrl) && constantTimeEquals(providedToken, token));
+}
+
+export async function authorizeAdminRequest(request: IncomingMessage, options: AdminGuardOptions): Promise<boolean> {
+  if (!isAuthorizedAdminRequest(request, options)) {
+    return false;
+  }
+
+  const config = options.cloudflareAccessConfig;
+  if (!config?.enabled) {
+    return true;
+  }
+  if (!options.cloudflareAccessVerifier) {
+    return false;
+  }
+
+  const decision = await verifyCloudflareAccess({
+    headers: request.headers,
+    config,
+    verifier: options.cloudflareAccessVerifier,
+    nowEpochSeconds: Math.floor(Date.now() / 1000)
+  });
+
+  return decision.allowed;
 }

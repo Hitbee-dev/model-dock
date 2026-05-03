@@ -8,13 +8,12 @@ import {
 } from "@modeldock/auth";
 import { validateProviderConnection, type ProviderKind, type ProviderValidationFetch } from "@modeldock/byok";
 import type { AuthStore } from "./auth-store.js";
-import { isAdminHost, isAuthorizedAdminRequest } from "./security.js";
+import { authorizeAdminRequest, isAdminHost } from "./security.js";
+import type { AdminGuardOptions } from "./security.js";
 import type { RateLimiter } from "./rate-limit.js";
 import type { RegistrationStore } from "./registrations.js";
 
-export type ApiHandlerOptions = {
-  adminAppUrl: string;
-  adminApiToken?: string;
+export type ApiHandlerOptions = AdminGuardOptions & {
   authStore: AuthStore;
   providerValidationFetch: ProviderValidationFetch;
   rateLimiter: RateLimiter;
@@ -260,7 +259,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
       }
 
       if (request.method === "GET" && request.url === "/admin/approvals") {
-        if (!isAuthorizedAdminRequest(request, options)) {
+        if (!(await authorizeAdminRequest(request, options))) {
           sendJson(response, 403, { error: "admin_approval_requires_admin_host_and_token" });
           return;
         }
@@ -269,7 +268,7 @@ export function createApiHandler(options: ApiHandlerOptions) {
       }
 
       if (request.method === "POST" && request.url?.startsWith("/admin/approvals/")) {
-        if (!isAuthorizedAdminRequest(request, options)) {
+        if (!(await authorizeAdminRequest(request, options))) {
           sendJson(response, 403, { error: "admin_approval_requires_admin_host_and_token" });
           return;
         }

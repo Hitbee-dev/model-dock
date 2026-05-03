@@ -1,56 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { hashPassword } from "@modeldock/auth";
-import { createMemoryAuthStore, type AuthUser } from "./auth-store.js";
-import { createApiHandler } from "./http.js";
-import { createMemoryRateLimiter } from "./rate-limit.js";
 import { createMemoryRegistrationStore } from "./registrations.js";
-import { isAuthorizedAdminRequest } from "./security.js";
-
-async function invokeApi(
-  handler: ReturnType<typeof createApiHandler>,
-  input: { method: string; url: string; headers?: Record<string, string>; body?: string; remoteAddress?: string }
-): Promise<{ status: number; body: unknown; headers: Record<string, string> }> {
-  let status = 0;
-  let rawBody = "";
-  let responseHeaders: Record<string, string> = {};
-  const request = {
-    method: input.method,
-    url: input.url,
-    headers: input.headers ?? {},
-    socket: { remoteAddress: input.remoteAddress ?? "127.0.0.1" },
-    async *[Symbol.asyncIterator]() {
-      if (input.body) {
-        yield Buffer.from(input.body);
-      }
-    }
-  };
-  const response = {
-    writeHead(nextStatus: number, headers: Record<string, string>) {
-      status = nextStatus;
-      responseHeaders = headers;
-    },
-    end(body: string) {
-      rawBody = body;
-    }
-  };
-
-  await handler(request as never, response as never);
-  return { status, body: JSON.parse(rawBody) as unknown, headers: responseHeaders };
-}
-
-function createTestHandler(input: { users?: AuthUser[]; sessionSecret?: string } = {}) {
-  return createApiHandler({
-    adminAppUrl: "http://127.0.0.1:3001",
-    adminApiToken: "admin-secret",
-    authStore: createMemoryAuthStore(input.users),
-    providerValidationFetch: async () => ({ status: 200 }),
-    rateLimiter: createMemoryRateLimiter(),
-    registrations: createMemoryRegistrationStore(),
-    secureCookies: false,
-    sessionSecret: input.sessionSecret ?? "test-session-secret-that-is-at-least-32-bytes",
-    sessionTtlSeconds: 3600
-  });
-}
+import { authorizeAdminRequest, isAuthorizedAdminRequest } from "./security.js";
+import { createTestHandler, invokeApi } from "./test-helpers.js";
 
 describe("api scaffold", () => {
   it("fails closed for admin API on the public API placeholder", () => {
@@ -87,21 +39,58 @@ describe("api scaffold", () => {
     ).toBe(false);
   });
 
+  it("requires Cloudflare Access when enabled for admin approval", async () => {
+    const request = {
+      headers: {
+        host: "127.0.0.1:3001",
+        "x-modeldock-admin-token": "secret",
+        "cf-access-jwt-assertion": "jwt"
+      }
+    };
+
+    await expect(
+      authorizeAdminRequest(request as never, {
+        adminAppUrl: "http://127.0.0.1:3001",
+        adminApiToken: "secret",
+        cloudflareAccessConfig: {
+          enabled: true,
+          teamDomain: "team.cloudflareaccess.com",
+          allowedAudiences: ["aud_1"],
+          allowedEmails: ["owner@example.com"]
+        },
+        cloudflareAccessVerifier: {
+          async verifyJwt() {
+            return {
+              email: "owner@example.com",
+              aud: ["aud_1"],
+              iss: "https://team.cloudflareaccess.com",
+              exp: Math.floor(Date.now() / 1000) + 60
+            };
+          }
+        }
+      })
+    ).resolves.toBe(true);
+
+    await expect(
+      authorizeAdminRequest(request as never, {
+        adminAppUrl: "http://127.0.0.1:3001",
+        adminApiToken: "secret",
+        cloudflareAccessConfig: {
+          enabled: true,
+          teamDomain: "team.cloudflareaccess.com",
+          allowedAudiences: ["aud_1"]
+        }
+      })
+    ).resolves.toBe(false);
+  });
+
   it("validates provider keys without reflecting submitted secrets", async () => {
     const upstreamCalls: Array<{ url: string; authorization?: string }> = [];
-    const handler = createApiHandler({
-      adminAppUrl: "http://127.0.0.1:3001",
-      adminApiToken: "admin-secret",
-      authStore: createMemoryAuthStore(),
+    const handler = createTestHandler({
       providerValidationFetch: async (url, init) => {
         upstreamCalls.push({ url, authorization: init.headers.authorization });
         return { status: 200 };
-      },
-      rateLimiter: createMemoryRateLimiter(),
-      registrations: createMemoryRegistrationStore(),
-      secureCookies: false,
-      sessionSecret: "test-session-secret-that-is-at-least-32-bytes",
-      sessionTtlSeconds: 3600
+      }
     });
 
     const response = await invokeApi(handler, {
@@ -124,16 +113,7 @@ describe("api scaffold", () => {
   });
 
   it("rate-limits provider validation requests", async () => {
-    const handler = createApiHandler({
-      adminAppUrl: "http://127.0.0.1:3001",
-      authStore: createMemoryAuthStore(),
-      providerValidationFetch: async () => ({ status: 200 }),
-      rateLimiter: createMemoryRateLimiter(),
-      registrations: createMemoryRegistrationStore(),
-      secureCookies: false,
-      sessionSecret: "test-session-secret-that-is-at-least-32-bytes",
-      sessionTtlSeconds: 3600
-    });
+    const handler = createTestHandler();
 
     for (let index = 0; index < 10; index += 1) {
       const response = await invokeApi(handler, {
