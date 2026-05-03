@@ -9,6 +9,17 @@ export const postgresSchema = [
     approved_at timestamptz,
     approved_by text
   )`,
+  `create table if not exists sessions (
+    id text primary key,
+    user_id text not null references users(id),
+    session_token_hash text not null unique,
+    csrf_token_hash text not null,
+    user_agent text,
+    ip_hash text,
+    expires_at timestamptz not null,
+    revoked_at timestamptz,
+    created_at timestamptz not null
+  )`,
   `create table if not exists provider_credentials (
     id text primary key,
     user_id text not null references users(id),
@@ -17,6 +28,13 @@ export const postgresSchema = [
     key_id text not null,
     created_at timestamptz not null,
     deleted_at timestamptz
+  )`,
+  `create table if not exists conversation_folders (
+    id text primary key,
+    user_id text not null references users(id),
+    name text not null,
+    created_at timestamptz not null,
+    updated_at timestamptz not null
   )`,
   `create table if not exists conversations (
     id text primary key,
@@ -31,6 +49,43 @@ export const postgresSchema = [
     deleted_at timestamptz,
     created_at timestamptz not null,
     updated_at timestamptz not null
+  )`,
+  `create unique index if not exists conversations_id_user_id_idx
+    on conversations (id, user_id)`,
+  `create table if not exists messages (
+    id text primary key,
+    conversation_id text not null,
+    user_id text not null references users(id),
+    role text not null,
+    content text,
+    content_stored boolean not null,
+    created_at timestamptz not null,
+    foreign key (conversation_id, user_id) references conversations(id, user_id),
+    check (content_stored = true or content is null)
+  )`,
+  `create table if not exists litellm_users (
+    user_id text primary key references users(id),
+    litellm_user_id text,
+    max_budget_usd numeric,
+    budget_duration text,
+    created_at timestamptz not null,
+    updated_at timestamptz not null
+  )`,
+  `create table if not exists litellm_virtual_keys (
+    id text primary key,
+    user_id text not null references users(id),
+    key_alias text not null,
+    key_hash text not null,
+    created_at timestamptz not null,
+    revoked_at timestamptz
+  )`,
+  `create table if not exists credit_ledger_entries (
+    id text primary key,
+    user_id text not null references users(id),
+    amount_usd numeric not null,
+    reason text not null,
+    source text not null,
+    created_at timestamptz not null
   )`,
   `create table if not exists rag_documents (
     id text primary key,

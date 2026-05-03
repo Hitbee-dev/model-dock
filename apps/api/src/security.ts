@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import type { IncomingMessage } from "node:http";
 
 export type AdminGuardOptions = {
@@ -5,9 +6,19 @@ export type AdminGuardOptions = {
   adminApiToken?: string;
 };
 
+function headerValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value;
+}
+
+export function constantTimeEquals(left: string, right: string): boolean {
+  const leftBuffer = Buffer.from(left);
+  const rightBuffer = Buffer.from(right);
+  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
+}
+
 export function isAdminHost(request: IncomingMessage, adminAppUrl: string): boolean {
   const expected = new URL(adminAppUrl).host;
-  return request.headers["x-modeldock-trusted-host"] === expected;
+  return headerValue(request.headers.host) === expected;
 }
 
 export function isAuthorizedAdminRequest(request: IncomingMessage, options: AdminGuardOptions): boolean {
@@ -16,5 +27,6 @@ export function isAuthorizedAdminRequest(request: IncomingMessage, options: Admi
     return false;
   }
 
-  return isAdminHost(request, options.adminAppUrl) && request.headers["x-modeldock-admin-token"] === token;
+  const providedToken = headerValue(request.headers["x-modeldock-admin-token"]);
+  return Boolean(providedToken && isAdminHost(request, options.adminAppUrl) && constantTimeEquals(providedToken, token));
 }

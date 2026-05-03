@@ -13,9 +13,9 @@ export type ApprovedRegistration = Omit<PendingRegistration, "status"> & {
 };
 
 export type RegistrationStore = {
-  submit(input: { email: string; displayName?: string }): PendingRegistration;
-  listPending(): PendingRegistration[];
-  approve(id: string, approvedBy: string): ApprovedRegistration;
+  submit(input: { email: string; displayName?: string }): Promise<PendingRegistration>;
+  listPending(): Promise<PendingRegistration[]>;
+  approve(id: string, approvedBy: string): Promise<ApprovedRegistration>;
 };
 
 function normalizeEmail(email: string): string {
@@ -58,16 +58,16 @@ export function createMemoryRegistrationStore(now = () => new Date().toISOString
   const pending = new Map<string, PendingRegistration>();
 
   return {
-    submit(input) {
+    async submit(input) {
       const id = `reg_${crypto.randomUUID()}`;
       const registration = createPendingRegistration({ ...input, id, now: now() });
       pending.set(id, registration);
       return registration;
     },
-    listPending() {
+    async listPending() {
       return [...pending.values()].sort((left, right) => left.requestedAt.localeCompare(right.requestedAt));
     },
-    approve(id, approvedBy) {
+    async approve(id, approvedBy) {
       const registration = pending.get(id);
       if (!registration) {
         throw new Error("Registration request was not found.");

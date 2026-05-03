@@ -7,17 +7,17 @@ describe("api scaffold", () => {
     expect("admin_api_requires_dedicated_admin_host").toMatch("admin_api");
   });
 
-  it("keeps signup requests pending until admin approval", () => {
+  it("keeps signup requests pending until admin approval", async () => {
     const store = createMemoryRegistrationStore(() => "2026-05-02T00:00:00.000Z");
-    const pending = store.submit({ email: "USER@example.com" });
+    const pending = await store.submit({ email: "USER@example.com" });
 
-    expect(store.listPending()).toHaveLength(1);
-    expect(store.approve(pending.id, "owner_1").status).toBe("active");
-    expect(store.listPending()).toHaveLength(0);
+    expect(await store.listPending()).toHaveLength(1);
+    expect((await store.approve(pending.id, "owner_1")).status).toBe("active");
+    expect(await store.listPending()).toHaveLength(0);
   });
 
   it("denies admin approval when the admin token is missing", () => {
-    const request = { headers: { "x-modeldock-trusted-host": "127.0.0.1:3001" } };
+    const request = { headers: { host: "127.0.0.1:3001" } };
 
     expect(
       isAuthorizedAdminRequest(request as never, { adminAppUrl: "http://127.0.0.1:3001", adminApiToken: undefined })
@@ -27,7 +27,7 @@ describe("api scaffold", () => {
   it("does not trust a client-controlled host header for admin approval", () => {
     const request = {
       headers: {
-        host: "127.0.0.1:3001",
+        "x-modeldock-trusted-host": "127.0.0.1:3001",
         "x-modeldock-admin-token": "secret"
       }
     };
