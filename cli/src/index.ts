@@ -25,4 +25,4 @@ if (command === "create-owner") {
   }
 }
 
-console.log(`modeldock ${command}: placeholder command registered. See ROADMAP.md for implementation steps.`);
+  console.log(`modeldock ${command}: placeholder command registered for the current ModelDock scaffold.`);

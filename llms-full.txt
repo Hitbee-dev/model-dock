@@ -16,7 +16,7 @@ Official support is API-key and OpenAI-compatible provider access through LiteLL
 
 ## Current limitations
 
-The repository is in bootstrap scaffold state. Auth, owner bootstrap, real database migrations, BYOK UI, chat, MCP execution, and full LiteLLM API integration are planned roadmap work.
+The repository is in early development. Public docs describe the current scaffold, shipped package boundaries, and stable security constraints.
 
 ## Canonical docs
 

@@ -11,7 +11,7 @@ Skill manifests live behind `@modeldock/skills`. Any skill requesting network, f
 ## Planned layout
 
 ```text
-SKILL.md
+skill.md
 metadata.json
 examples/
 scripts/

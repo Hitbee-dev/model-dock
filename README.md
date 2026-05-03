@@ -109,7 +109,7 @@ LiteLLM:   internal Docker network only by default
 Postgres:  internal Docker network only by default
 ```
 
-The current apps are secure placeholders with health endpoints. Full owner bootstrap, auth, chat, BYOK, and MCP workflows are tracked in [ROADMAP.md](ROADMAP.md).
+The current apps provide a secure local scaffold with health endpoints and MVP control-plane primitives. Public releases will document completed features in the changelog and package metadata.
 
 ## Docker Compose
 
@@ -197,19 +197,9 @@ Security defaults:
 
 Report vulnerabilities through [SECURITY.md](SECURITY.md).
 
-## Roadmap
+## Release Status
 
-The first implementation target is a reliable dock:
-
-- Phase 0: repository hygiene and open-source baseline.
-- Phase 1: installable local-only skeleton with LiteLLM.
-- Phase 2: owner bootstrap, auth, admin separation, and role model.
-- Phase 3: LiteLLM users, virtual keys, budget mapping, and spend sync.
-- Phase 4: BYOK credential vault and provider onboarding.
-- Phase 5: chat, folders, server-stored and local-only conversation modes.
-- Phase 6: MCP and skills.
-
-See [ROADMAP.md](ROADMAP.md).
+ModelDock is in early development. The public repository intentionally describes shipped scaffolding and stable design constraints only; internal implementation plans are kept out of the published source until release boundaries are ready.
 
 ## AI search and documentation metadata
 
