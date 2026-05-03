@@ -1,4 +1,10 @@
+English | [한국어](README.ko.md) | [中文](README.zh.md) | [日本語](README.ja.md) | [Español](README.es.md) | [Tiếng Việt](README.vi.md) | [Português](README.pt.md)
+
 # ModelDock
+
+[![npm version](https://img.shields.io/npm/v/modeldock?color=cb3837)](https://www.npmjs.com/package/modeldock)
+[![CLI package](https://img.shields.io/npm/v/@modeldock/cli?label=%40modeldock%2Fcli&color=cb3837)](https://www.npmjs.com/package/@modeldock/cli)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ModelDock is an open-source control plane for self-hosted multi-user LLM apps built on LiteLLM.
 It docks providers, BYOK credentials, credits, budgets, LiteLLM routing, chat interfaces,
