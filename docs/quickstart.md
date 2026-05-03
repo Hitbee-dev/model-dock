@@ -36,7 +36,8 @@ Do not use placeholder secrets in production. Admin is a separate service and mu
 ## Related links
 
 - [Docker deployment](deployment/docker.md)
+- [Production Docker](deployment/production-docker.md)
 - [Architecture](architecture.md)
 - [Security](security.md)
 
-Last updated: 2026-05-02
+Last updated: 2026-05-03

@@ -26,6 +26,12 @@ const pages = [
   { source: "docs/security.md", output: "docs/security.html", title: "Security" },
   { source: "docs/storage-rag.md", output: "docs/storage-rag.html", title: "Storage and RAG" },
   { source: "docs/deployment/docker.md", output: "docs/deployment/docker.html", title: "Docker Deployment" },
+  {
+    source: "docs/deployment/production-docker.md",
+    output: "docs/deployment/production-docker.html",
+    title: "Production Docker"
+  },
+  { source: "docs/deployment/operations.md", output: "docs/deployment/operations.html", title: "Operations" },
   { source: "docs/deployment/cloudflare.md", output: "docs/deployment/cloudflare.html", title: "Cloudflare Deployment" },
   { source: "docs/deployment/kubernetes.md", output: "docs/deployment/kubernetes.html", title: "Kubernetes Deployment" },
   { source: "docs/faq.md", output: "docs/faq.html", title: "FAQ" }

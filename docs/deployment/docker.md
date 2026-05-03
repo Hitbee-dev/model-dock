@@ -1,6 +1,6 @@
 # Docker Deployment
 
-ModelDock provides a Docker Compose scaffold for local-only development.
+ModelDock provides a Docker Compose scaffold for local-only development and private-origin production planning.
 
 ## What is this page for?
 
@@ -32,5 +32,7 @@ Replace every `replace-with-*` value before production. Do not publish Postgres 
 
 - [Quickstart](../quickstart.md)
 - [Cloudflare deployment](cloudflare.md)
+- [Production Docker](production-docker.md)
+- [Operations runbook](operations.md)
 
-Last updated: 2026-05-02
+Last updated: 2026-05-03
