@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   createLiteLLMClient,
   createLiteLLMHeaders,
+  createLiteLLMProvisioningPlan,
   createModelAllowlist,
   renderLiteLLMConfig,
   type LiteLLMFetch
@@ -21,7 +22,28 @@ describe("LiteLLM helpers", () => {
           credentialRef: "OPENAI_API_KEY"
         }
       ])
-    ).toContain("model_name: gpt-4o-mini");
+    ).toContain('model_name: "gpt-4o-mini"');
+  });
+
+  it("rejects LiteLLM YAML injection in route config", () => {
+    expect(() =>
+      renderLiteLLMConfig([
+        {
+          modelName: "gpt-4o-mini\napi_key: os.environ/OTHER_KEY",
+          provider: "openai",
+          credentialRef: "OPENAI_API_KEY"
+        }
+      ])
+    ).toThrow("newlines");
+    expect(() =>
+      renderLiteLLMConfig([
+        {
+          modelName: "gpt-4o-mini",
+          provider: "openai",
+          credentialRef: "openai_api_key"
+        }
+      ])
+    ).toThrow("Invalid LiteLLM credential");
   });
 
   it("creates users and virtual keys through server-side LiteLLM endpoints", async () => {
@@ -69,5 +91,32 @@ describe("LiteLLM helpers", () => {
       "claude-3-5-haiku"
     ]);
     expect(() => createModelAllowlist([" "])).toThrow("At least one model");
+  });
+
+  it("builds a user provisioning plan with budget and model allowlist", async () => {
+    const plan = createLiteLLMProvisioningPlan({
+      userId: "user_1",
+      maxBudgetUsd: 5,
+      budgetDuration: "30d",
+      modelAllowlist: ["gpt-4o-mini", "gpt-4o-mini"]
+    });
+    const calls: string[] = [];
+    const fetch: LiteLLMFetch = async (url) => {
+      calls.push(url);
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return { key: "litellm-key" };
+        }
+      };
+    };
+
+    const client = createLiteLLMClient({ baseUrl: "http://litellm:4000", masterKey: "server-only", fetch });
+    const key = await client.provisionUserAccess(plan);
+
+    expect(plan.user.modelAllowlist).toEqual(["gpt-4o-mini"]);
+    expect(key.keyAlias).toBe("user_1-default");
+    expect(calls).toEqual(["http://litellm:4000/user/new", "http://litellm:4000/key/generate"]);
   });
 });
