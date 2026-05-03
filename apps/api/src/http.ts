@@ -10,7 +10,13 @@ import { validateProviderConnection, type ProviderKind, type ProviderValidationF
 import type { AuthStore } from "./auth-store.js";
 import { streamLiteLLMChat, type ChatCompletionStreamFetch, type ChatRagRetriever } from "./chat-stream.js";
 import { headerValue, parseCookies, readBody, readInput, sendJson } from "./http-utils.js";
-import { ingestRagDocumentUpload, type RagDocumentStore } from "./rag-documents.js";
+import {
+  deleteRagDocument,
+  ingestRagDocumentUpload,
+  type RagDocumentStore,
+  type RagObjectDeletionClient,
+  type RagVectorDeletionClient
+} from "./rag-documents.js";
 import { authorizeAdminRequest, isAdminHost } from "./security.js";
 import type { AdminGuardOptions } from "./security.js";
 import type { RateLimiter } from "./rate-limit.js";
@@ -23,7 +29,9 @@ export type ApiHandlerOptions = AdminGuardOptions & {
   litellmMasterKey?: string;
   providerValidationFetch: ProviderValidationFetch;
   ragDocumentStore: RagDocumentStore;
+  ragObjectStorage?: RagObjectDeletionClient;
   ragRetriever?: ChatRagRetriever;
+  ragVectorStore?: RagVectorDeletionClient;
   rateLimiter: RateLimiter;
   registrations: RegistrationStore;
   secureCookies: boolean;
@@ -252,6 +260,36 @@ export function createApiHandler(options: ApiHandlerOptions) {
           store: options.ragDocumentStore
         });
         sendJson(response, 202, result);
+        return;
+      }
+
+      if (request.method === "DELETE" && request.url?.startsWith("/rag/documents/")) {
+        const session = await getCurrentSession(request, options);
+        const csrfToken = headerValue(request.headers[csrfHeaderName]);
+        if (
+          !session ||
+          !csrfToken ||
+          !verifyTokenHash({ token: csrfToken, expectedHash: session.csrfTokenHash, secret: requireSessionSecret(options) })
+        ) {
+          sendJson(response, 403, { error: "csrf_required" });
+          return;
+        }
+        if (!options.ragObjectStorage || !options.ragVectorStore) {
+          sendJson(response, 503, { error: "rag_deletion_not_configured" });
+          return;
+        }
+        const documentId = decodeURIComponent(request.url.split("/").at(3) ?? "");
+        sendJson(
+          response,
+          200,
+          await deleteRagDocument({
+            authenticatedUserId: session.userId,
+            documentId,
+            objectStorage: options.ragObjectStorage,
+            store: options.ragDocumentStore,
+            vectorStore: options.ragVectorStore
+          })
+        );
         return;
       }
 

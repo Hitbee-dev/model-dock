@@ -183,4 +183,35 @@ describe("postgres rag document store", () => {
     expect(client.statements.join("\n")).toContain("insert into rag_chunks");
     expect(client.values.flat()).not.toContain("secret policy text");
   });
+
+  it("loads owner-scoped RAG deletion targets and marks documents deleted", async () => {
+    const client = new FakeClient();
+    client.rows = [
+      {
+        id: "ragdoc_1",
+        owner_id: "user_1",
+        tenant_id: "user_1",
+        object_key: "rag-documents/user_1/ragdoc_1/policy.txt",
+        weaviate_object_ids: ["ragdoc_1:0"]
+      }
+    ];
+    const store = createPostgresRagDocumentStore(client);
+
+    const target = await store.findOwnedDocument({ documentId: "ragdoc_1", ownerId: "user_1" });
+    await store.markDeleted({
+      documentId: "ragdoc_1",
+      ownerId: "user_1",
+      deletedAt: "2026-05-03T00:00:00.000Z"
+    });
+
+    expect(target).toMatchObject({
+      id: "ragdoc_1",
+      ownerId: "user_1",
+      tenantId: "user_1",
+      weaviateObjectIds: ["ragdoc_1:0"]
+    });
+    expect(client.statements[0]).toContain("where d.id = $1 and d.owner_id = $2");
+    expect(client.statements[1]).toContain("set deleted_at = $3");
+    expect(client.values[1]).toEqual(["ragdoc_1", "user_1", "2026-05-03T00:00:00.000Z"]);
+  });
 });
