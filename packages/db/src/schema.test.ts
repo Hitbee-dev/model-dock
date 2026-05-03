@@ -6,6 +6,12 @@ describe("postgres schema", () => {
     const schema = renderPostgresSchema();
 
     expect(schema).toContain("create table if not exists users");
+    expect(schema).toContain("create table if not exists sessions");
+    expect(schema).toContain("create table if not exists messages");
+    expect(schema).toContain("foreign key (conversation_id, user_id)");
+    expect(schema).toContain("check (content_stored = true or content is null)");
+    expect(schema).toContain("create table if not exists litellm_virtual_keys");
+    expect(schema).toContain("create table if not exists credit_ledger_entries");
     expect(schema).toContain("create table if not exists rag_documents");
     expect(schema).toContain("create table if not exists rag_chunks");
     expect(schema).toContain("tenant_id text not null");
