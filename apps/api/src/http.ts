@@ -8,7 +8,7 @@ import {
 } from "@modeldock/auth";
 import { validateProviderConnection, type ProviderKind, type ProviderValidationFetch } from "@modeldock/byok";
 import type { AuthStore } from "./auth-store.js";
-import { streamLiteLLMChat, type ChatCompletionStreamFetch } from "./chat-stream.js";
+import { streamLiteLLMChat, type ChatCompletionStreamFetch, type ChatRagRetriever } from "./chat-stream.js";
 import { headerValue, parseCookies, readBody, readInput, sendJson } from "./http-utils.js";
 import { ingestRagDocumentUpload, type RagDocumentStore } from "./rag-documents.js";
 import { authorizeAdminRequest, isAdminHost } from "./security.js";
@@ -23,6 +23,7 @@ export type ApiHandlerOptions = AdminGuardOptions & {
   litellmMasterKey?: string;
   providerValidationFetch: ProviderValidationFetch;
   ragDocumentStore: RagDocumentStore;
+  ragRetriever?: ChatRagRetriever;
   rateLimiter: RateLimiter;
   registrations: RegistrationStore;
   secureCookies: boolean;

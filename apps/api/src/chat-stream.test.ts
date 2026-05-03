@@ -79,4 +79,53 @@ describe("api chat streaming", () => {
 
     expect(response.status).toBe(401);
   });
+
+  it("injects tenant-scoped RAG context into upstream chat messages", async () => {
+    const upstreamBodies: Array<Record<string, unknown>> = [];
+    const handler = createTestHandler({
+      users: [
+        {
+          id: "user_1",
+          email: "user@example.com",
+          role: "user",
+          status: "active",
+          passwordHash: hashPassword({
+            password: "correct-password",
+            salt: Buffer.alloc(16),
+            iterations: 1
+          })
+        }
+      ],
+      ragRetriever: async () => [
+        {
+          id: "doc_1:0",
+          tenantId: "user_1",
+          documentId: "doc_1",
+          text: "Budget policy details",
+          sourceUri: "s3://bucket/doc.txt?token=secret"
+        }
+      ],
+      chatCompletionFetch: (async (_url, init) => {
+        upstreamBodies.push(JSON.parse(init.body) as Record<string, unknown>);
+        return { ok: true, status: 200, body: (async function* () { yield "data: [DONE]\n"; })() };
+      }) satisfies ChatCompletionStreamFetch
+    });
+    const login = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/login",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "user@example.com", password: "correct-password" })
+    });
+
+    await invokeApi(handler, {
+      method: "POST",
+      url: "/chat/stream",
+      headers: { cookie: login.headers["set-cookie"] ?? "", "content-type": "application/json" },
+      body: JSON.stringify({ model: "gpt-test", messages: [{ role: "user", content: "What is my budget?" }] })
+    });
+
+    expect(JSON.stringify(upstreamBodies[0]?.messages)).toContain("tenant-scoped reference context");
+    expect(JSON.stringify(upstreamBodies[0]?.messages)).toContain("Budget policy details");
+    expect(JSON.stringify(upstreamBodies[0]?.messages)).not.toContain("token=secret");
+  });
 });

@@ -1,5 +1,5 @@
 import { createMemoryAuthStore, type AuthUser } from "./auth-store.js";
-import type { ChatCompletionStreamFetch } from "./chat-stream.js";
+import type { ChatCompletionStreamFetch, ChatRagRetriever } from "./chat-stream.js";
 import { createApiHandler } from "./http.js";
 import { createMemoryRagDocumentStore, type RagDocumentStore } from "./rag-documents.js";
 import { createMemoryRateLimiter } from "./rate-limit.js";
@@ -57,6 +57,7 @@ export function createTestHandler(
     providerValidationFetch?: ProviderValidationFetch;
     chatCompletionFetch?: ChatCompletionStreamFetch;
     ragDocumentStore?: RagDocumentStore;
+    ragRetriever?: ChatRagRetriever;
   } = {}
 ) {
   return createApiHandler({
@@ -70,6 +71,7 @@ export function createTestHandler(
     litellmMasterKey: "test-litellm-master-key",
     providerValidationFetch: input.providerValidationFetch ?? (async () => ({ status: 200 })),
     ragDocumentStore: input.ragDocumentStore ?? createMemoryRagDocumentStore(),
+    ragRetriever: input.ragRetriever,
     rateLimiter: createMemoryRateLimiter(),
     registrations: createMemoryRegistrationStore(),
     secureCookies: false,
