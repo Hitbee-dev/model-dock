@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { renderHomePage, renderProviderSettingsPage, renderSignupPage } from "./pages.js";
+import { localOnlyChatWarning, renderHomePage, renderProviderSettingsPage, renderSignupPage } from "./pages.js";
 
 describe("web scaffold", () => {
   it("keeps the user app separate from the admin app", () => {
@@ -12,6 +12,13 @@ describe("web scaffold", () => {
 
   it("links to provider settings from the user home", () => {
     expect(renderHomePage()).toContain("/providers");
+  });
+
+  it("warns users before enabling local-only chat storage", () => {
+    const page = renderHomePage();
+
+    expect(page).toContain(localOnlyChatWarning);
+    expect(page).toContain("Use local-only storage");
   });
 
   it("renders provider validation without echoing API key values", () => {

@@ -16,6 +16,9 @@ function escapeAttribute(value: string): string {
   return value.replaceAll("&", "&amp;").replaceAll('"', "&quot;").replaceAll("<", "&lt;");
 }
 
+export const localOnlyChatWarning =
+  "Local-only chats stay in this browser and are not available on other devices. Export them before clearing browser data.";
+
 export function renderSignupPage(apiUrl: string): string {
   const escapedApiUrl = escapeAttribute(apiUrl);
   return htmlPage(
@@ -84,6 +87,11 @@ export function renderHomePage(): string {
     `<main>
   <h1>ModelDock</h1>
   <p>Self-hosted LLM service control plane.</p>
+  <section aria-labelledby="local-only-chat">
+    <h2 id="local-only-chat">Local-only chat mode</h2>
+    <p>${localOnlyChatWarning}</p>
+    <button type="button">Use local-only storage</button>
+  </section>
   <a href="/signup">Request access</a>
   <a href="/providers">Provider settings</a>
 </main>`

@@ -61,7 +61,7 @@
 - [x] Implement per-user conversation and folder contracts.
 - [x] Add server-stored conversation mode contract.
 - [x] Add local-only conversation mode contract.
-- [ ] Implement browser IndexedDB local-only storage and clear warnings.
+- [x] Implement browser IndexedDB local-only storage and clear warnings.
 - [x] Add OpenAI-compatible streaming event parser contract.
 - [ ] Stream responses through LiteLLM from the API to the browser.
 - [x] Add server export/import and separate browser local-only export DTO.
