@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { chunkText } from "./chunking.js";
+import { createRagDeletionPlan, createRagIngestPlan } from "./ingest.js";
 import { createRetrievalPlan, createTenantScope } from "./weaviate.js";
 
 describe("rag contracts", () => {
@@ -29,5 +30,55 @@ describe("rag contracts", () => {
     expect(() => createTenantScope({ authenticatedUserId: "user_1", documentOwnerId: "user_2" })).toThrow(
       "authenticated owner"
     );
+  });
+
+  it("creates a tenant-scoped Weaviate ingest plan", () => {
+    const scope = createTenantScope({ authenticatedUserId: "user_1", documentOwnerId: "user_1" });
+    const plan = createRagIngestPlan({
+      scope,
+      className: "ModelDockChunk",
+      maxChunkCharacters: 8,
+      document: {
+        documentId: "doc_1",
+        sourceUri: "s3://modeldock/doc_1.txt",
+        text: "alpha beta gamma",
+        ownerId: "user_1",
+        authenticatedUserId: "user_1"
+      }
+    });
+
+    expect(plan.document.tenantId).toBe("user_1");
+    expect(plan.objects[0]?.properties.text).toBe("alpha be");
+    expect(plan.objects[0]?.properties.textChecksumSha256).toHaveLength(64);
+  });
+
+  it("rejects RAG ingest for a different owner", () => {
+    const scope = createTenantScope({ authenticatedUserId: "user_1", documentOwnerId: "user_1" });
+
+    expect(() =>
+      createRagIngestPlan({
+        scope,
+        className: "ModelDockChunk",
+        maxChunkCharacters: 8,
+        document: {
+          documentId: "doc_1",
+          sourceUri: "s3://modeldock/doc_1.txt",
+          text: "alpha",
+          ownerId: "user_2",
+          authenticatedUserId: "user_1"
+        }
+      })
+    ).toThrow("owner");
+  });
+
+  it("builds deletion plans scoped by document and tenant", () => {
+    const plan = createRagDeletionPlan({
+      className: "ModelDockChunk",
+      documentId: "doc_1",
+      tenantId: "user_1"
+    });
+
+    expect(plan.where.operands).toHaveLength(2);
+    expect(plan.where.operands.map((operand) => operand.valueText)).toEqual(["doc_1", "user_1"]);
   });
 });
