@@ -20,6 +20,13 @@ This page is for users connecting provider credentials and contributors implemen
 6. Requests route through ModelDock and LiteLLM.
 7. User can delete or rotate the credential.
 
+## Rotation
+
+Credential rotation replaces the encrypted provider secret while keeping the credential reference stable for chat and routing policies.
+Rotation uses fresh IV material, records the new encryption key id and rotation time, and never returns the old or new plaintext key to the browser.
+
+Deleted credentials cannot be rotated. Users must create a new provider credential after deletion.
+
 ## Security caveats
 
 Provider keys must not be logged, returned to the browser after save, or stored in plaintext. The browser receives a credential reference, not the plaintext provider key or encrypted ciphertext.

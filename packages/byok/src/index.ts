@@ -31,6 +31,7 @@ export type ProviderCredentialRef = {
   provider: ProviderKind;
   keyId: string;
   createdAt: string;
+  rotatedAt?: string;
   deletedAt?: string;
 };
 
@@ -96,6 +97,44 @@ export function validateProviderCredential(input: ProviderCredentialInput): void
   }
 }
 
+function assertUsableEncryptionKey(key: string): void {
+  if (!key || key.startsWith("replace-with-")) {
+    throw new Error("Credential encryption key must be configured before saving provider credentials.");
+  }
+}
+
+function encryptProviderSecret(input: {
+  credentialId: string;
+  userId: string;
+  provider: ProviderKind;
+  secret: string;
+  encryptionKey: string;
+  encryptionKeyId: string;
+  crypto: ProviderCredentialCrypto;
+}): ProviderCredentialCiphertext {
+  assertUsableEncryptionKey(input.encryptionKey);
+  const iv = input.crypto.randomBytes(12);
+  const encrypted = input.crypto.encryptAes256Gcm({
+    key: input.encryptionKey,
+    iv,
+    plaintext: input.secret,
+    aad: credentialEncryptionContext({
+      credentialId: input.credentialId,
+      userId: input.userId,
+      provider: input.provider,
+      keyId: input.encryptionKeyId
+    })
+  });
+
+  return {
+    keyId: input.encryptionKeyId,
+    algorithm: "aes-256-gcm-envelope",
+    iv: Buffer.from(iv).toString("base64url"),
+    authTag: encrypted.authTag,
+    ciphertext: encrypted.ciphertext
+  };
+}
+
 export function storeProviderCredential(input: {
   credential: ProviderCredentialInput;
   id: string;
@@ -105,29 +144,15 @@ export function storeProviderCredential(input: {
   crypto: ProviderCredentialCrypto;
 }): ProviderCredentialVaultRecord {
   validateProviderCredential(input.credential);
-  if (!input.encryptionKey || input.encryptionKey.startsWith("replace-with-")) {
-    throw new Error("Credential encryption key must be configured before saving provider credentials.");
-  }
-
-  const iv = input.crypto.randomBytes(12);
-  const encrypted = input.crypto.encryptAes256Gcm({
-    key: input.encryptionKey,
-    iv,
-    plaintext: input.credential.secret,
-    aad: credentialEncryptionContext({
-      credentialId: input.id,
-      userId: input.credential.userId,
-      provider: input.credential.provider,
-      keyId: input.encryptionKeyId
-    })
+  const encryptedSecret = encryptProviderSecret({
+    credentialId: input.id,
+    userId: input.credential.userId,
+    provider: input.credential.provider,
+    secret: input.credential.secret,
+    encryptionKey: input.encryptionKey,
+    encryptionKeyId: input.encryptionKeyId,
+    crypto: input.crypto
   });
-  const encryptedSecret: ProviderCredentialCiphertext = {
-    keyId: input.encryptionKeyId,
-    algorithm: "aes-256-gcm-envelope",
-    iv: Buffer.from(iv).toString("base64url"),
-    authTag: encrypted.authTag,
-    ciphertext: encrypted.ciphertext
-  };
 
   return {
     id: input.id,
@@ -141,12 +166,48 @@ export function storeProviderCredential(input: {
   };
 }
 
+export function rotateProviderCredential(input: {
+  current: ProviderCredentialVaultRecord;
+  secret: string;
+  rotatedAt: string;
+  encryptionKey: string;
+  encryptionKeyId: string;
+  crypto: ProviderCredentialCrypto;
+}): ProviderCredentialVaultRecord {
+  if (input.current.deletedAt) {
+    throw new Error("Deleted provider credentials cannot be rotated.");
+  }
+  validateProviderCredential({
+    userId: input.current.userId,
+    provider: input.current.provider,
+    secret: input.secret
+  });
+
+  const encryptedSecret = encryptProviderSecret({
+    credentialId: input.current.id,
+    userId: input.current.userId,
+    provider: input.current.provider,
+    secret: input.secret,
+    encryptionKey: input.encryptionKey,
+    encryptionKeyId: input.encryptionKeyId,
+    crypto: input.crypto
+  });
+
+  return {
+    ...input.current,
+    keyId: encryptedSecret.keyId,
+    rotatedAt: input.rotatedAt,
+    encryptedSecret
+  };
+}
+
 export function toCredentialResponse(record: ProviderCredentialVaultRecord): ProviderCredentialRef {
   return {
     id: record.id,
     provider: record.provider,
     keyId: record.keyId,
     createdAt: record.createdAt,
+    rotatedAt: record.rotatedAt,
     deletedAt: record.deletedAt
   };
 }

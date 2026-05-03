@@ -5,11 +5,23 @@ import {
   credentialEncryptionContext,
   deleteCredential,
   isSubscriptionOAuthEnabled,
+  rotateProviderCredential,
   storeProviderCredential,
   toCredentialResponse,
   validateProviderConnection,
   validateProviderCredential
 } from "./index.js";
+
+function testCrypto(ciphertext: string) {
+  return {
+    randomBytes(size: number) {
+      return new Uint8Array(size).fill(1);
+    },
+    encryptAes256Gcm() {
+      return { ciphertext, authTag: "tag" };
+    }
+  };
+}
 
 describe("BYOK contracts", () => {
   it("keeps subscription OAuth disabled unless explicitly enabled", () => {
@@ -41,14 +53,7 @@ describe("BYOK contracts", () => {
       createdAt: "2026-05-03T00:00:00.000Z",
       encryptionKey: "0123456789abcdef0123456789abcdef",
       encryptionKeyId: "default-v1",
-      crypto: {
-        randomBytes(size) {
-          return new Uint8Array(size).fill(1);
-        },
-        encryptAes256Gcm() {
-          return { ciphertext: "encrypted", authTag: "tag" };
-        }
-      },
+      crypto: testCrypto("encrypted"),
       credential: {
         userId: "user_1",
         provider: "openai",
@@ -67,6 +72,69 @@ describe("BYOK contracts", () => {
       })
     ).toContain("cred_1");
     expect(toCredentialResponse(record)).not.toHaveProperty("encryptedSecret");
+  });
+
+  it("rotates provider credentials without exposing old or new secrets", () => {
+    const current = storeProviderCredential({
+      id: "cred_1",
+      createdAt: "2026-05-03T00:00:00.000Z",
+      encryptionKey: "0123456789abcdef0123456789abcdef",
+      encryptionKeyId: "default-v1",
+      crypto: testCrypto("encrypted-old"),
+      credential: {
+        userId: "user_1",
+        provider: "openai",
+        displayName: "Work key",
+        secret: "sk-test-old"
+      }
+    });
+
+    const rotated = rotateProviderCredential({
+      current,
+      secret: "sk-test-new",
+      rotatedAt: "2026-05-03T01:00:00.000Z",
+      encryptionKey: "abcdef0123456789abcdef0123456789",
+      encryptionKeyId: "default-v2",
+      crypto: testCrypto("encrypted-new")
+    });
+
+    expect(rotated.id).toBe(current.id);
+    expect(rotated.encryptedSecretRef).toBe(current.encryptedSecretRef);
+    expect(rotated.keyId).toBe("default-v2");
+    expect(rotated.rotatedAt).toBe("2026-05-03T01:00:00.000Z");
+    expect(rotated.encryptedSecret.ciphertext).toBe("encrypted-new");
+    expect(JSON.stringify(toCredentialResponse(rotated))).not.toContain("sk-test-new");
+    expect(JSON.stringify(rotated)).not.toContain("sk-test-old");
+    expect(JSON.stringify(rotated)).not.toContain("sk-test-new");
+  });
+
+  it("refuses to rotate deleted provider credentials", () => {
+    const current = storeProviderCredential({
+      id: "cred_1",
+      createdAt: "2026-05-03T00:00:00.000Z",
+      encryptionKey: "0123456789abcdef0123456789abcdef",
+      encryptionKeyId: "default-v1",
+      crypto: testCrypto("encrypted-old"),
+      credential: {
+        userId: "user_1",
+        provider: "openai",
+        secret: "sk-test-old"
+      }
+    });
+
+    expect(() =>
+      rotateProviderCredential({
+        current: {
+          ...current,
+          deletedAt: "2026-05-03T01:00:00.000Z"
+        },
+        secret: "sk-test-new",
+        rotatedAt: "2026-05-03T02:00:00.000Z",
+        encryptionKey: "abcdef0123456789abcdef0123456789",
+        encryptionKeyId: "default-v2",
+        crypto: testCrypto("encrypted-new")
+      })
+    ).toThrow("Deleted provider credentials");
   });
 
   it("builds minimal provider validation plans without exposing keys in URLs", () => {
