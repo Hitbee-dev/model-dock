@@ -300,6 +300,26 @@ describe("api scaffold", () => {
     });
 
     expect(blocked.status).toBe(403);
+    expect(blocked.body).toMatchObject({ error: "current_password_required" });
+
+    const wrongCurrentPassword = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/credentials",
+      headers: {
+        cookie: login.headers["set-cookie"] ?? "",
+        "content-type": "application/json",
+        "x-modeldock-csrf-token": csrf
+      },
+      body: JSON.stringify({
+        currentPassword: "wrong-password",
+        email: "owner-new@example.test",
+        password: "new-admin-password",
+        passwordConfirmation: "new-admin-password"
+      })
+    });
+
+    expect(wrongCurrentPassword.status).toBe(403);
+    expect(wrongCurrentPassword.body).toMatchObject({ error: "current_password_invalid" });
 
     const updated = await invokeApi(handler, {
       method: "POST",
@@ -318,6 +338,50 @@ describe("api scaffold", () => {
     });
 
     expect(updated.status).toBe(200);
+  });
+
+  it("returns field-specific credential update errors", async () => {
+    const handler = createTestHandler({
+      users: [
+        {
+          id: "owner_1",
+          email: "admin",
+          role: "owner",
+          status: "active",
+          mustChangePassword: true,
+          passwordHash: hashPassword({
+            password: "admin",
+            salt: Buffer.alloc(16),
+            iterations: 1,
+            unsafeAllowShortPassword: true
+          })
+        }
+      ]
+    });
+    const login = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/login",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "admin", password: "admin" })
+    });
+    const csrf = (login.body as { csrfToken: string }).csrfToken;
+    const response = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/credentials",
+      headers: {
+        cookie: login.headers["set-cookie"] ?? "",
+        "content-type": "application/json",
+        "x-modeldock-csrf-token": csrf
+      },
+      body: JSON.stringify({
+        email: "owner@example.test",
+        password: "new-admin-password",
+        passwordConfirmation: "different-password"
+      })
+    });
+
+    expect(response.status).toBe(400);
+    expect(response.body).toMatchObject({ error: "password_confirmation_mismatch" });
   });
 
   it("allows release-mode admin proxy requests with admin session, csrf, and server token", async () => {

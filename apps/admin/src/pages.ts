@@ -127,7 +127,11 @@ function text(locale: SupportedLocale): AdminCopy {
   return copy[locale] ?? copy.en;
 }
 
-export function renderLoginPage(locale: SupportedLocale = "en", error?: string): string {
+export function renderLoginPage(
+  locale: SupportedLocale = "en",
+  error?: string,
+  values: { email?: string } = {}
+): string {
   const t = text(locale);
   return renderShell({
     title: "ModelDock Admin login",
@@ -143,8 +147,8 @@ export function renderLoginPage(locale: SupportedLocale = "en", error?: string):
       ${error ? `<p class="notice">${escapeHtml(error)}</p>` : ""}
     </div>
     <form class="form-panel" method="post" action="/login">
-      <label>ID or email <input name="email" autocomplete="username" value="admin" required></label>
-      <label>Password <input type="password" name="password" autocomplete="current-password" value="admin" required></label>
+      <label>ID or email <input name="email" autocomplete="username" value="${escapeAttribute(values.email ?? "admin")}" required></label>
+      <label>Password <input type="password" name="password" autocomplete="current-password" required></label>
       <button type="submit">${renderIcon("security")}<span>Sign in</span></button>
     </form>
   </section>
@@ -152,9 +156,18 @@ export function renderLoginPage(locale: SupportedLocale = "en", error?: string):
   });
 }
 
-export function renderSetupAccountPage(input: { csrfToken?: string; error?: string; locale?: SupportedLocale } = {}): string {
+export function renderSetupAccountPage(
+  input: {
+    csrfToken?: string;
+    error?: string;
+    fieldErrors?: Partial<Record<"currentPassword" | "email" | "password" | "passwordConfirmation", string>>;
+    locale?: SupportedLocale;
+    values?: { email?: string };
+  } = {}
+): string {
   const locale = input.locale ?? "en";
   const t = text(locale);
+  const fieldErrors = input.fieldErrors ?? {};
   return renderShell({
     title: "ModelDock Admin setup",
     surface: "admin",
@@ -166,17 +179,71 @@ export function renderSetupAccountPage(input: { csrfToken?: string; error?: stri
       <p class="eyebrow">${escapeHtml(t.protectedHost)}</p>
       <h1>${escapeHtml(t.setupTitle)}</h1>
       <p>${escapeHtml(t.setupBody)}</p>
-      ${input.error ? `<p class="notice">${escapeHtml(input.error)}</p>` : ""}
+      <p class="notice" data-setup-account-error>${input.error ? escapeHtml(input.error) : ""}</p>
     </div>
-    <form class="form-panel" method="post" action="/setup-account">
+    <form class="form-panel" method="post" action="/setup-account" data-setup-account-form>
       <input type="hidden" name="csrfToken" value="${escapeAttribute(input.csrfToken ?? "")}">
-      <label>ID or email <input name="email" autocomplete="username" required></label>
-      <label>Current password <input type="password" name="currentPassword" autocomplete="current-password"></label>
-      <label>New password <input type="password" name="password" autocomplete="new-password" required></label>
-      <label>Confirm password <input type="password" name="passwordConfirmation" autocomplete="new-password" required></label>
+      <label>ID or email <input name="email" autocomplete="username" value="${escapeAttribute(input.values?.email ?? "")}" required>
+        <span class="notice" data-field-error="email">${fieldErrors.email ? escapeHtml(fieldErrors.email) : ""}</span>
+      </label>
+      <label>Current password <input type="password" name="currentPassword" autocomplete="current-password">
+        <span class="notice" data-field-error="currentPassword">${fieldErrors.currentPassword ? escapeHtml(fieldErrors.currentPassword) : ""}</span>
+      </label>
+      <label>New password <input type="password" name="password" autocomplete="new-password" required>
+        <span class="notice" data-field-error="password">${fieldErrors.password ? escapeHtml(fieldErrors.password) : ""}</span>
+      </label>
+      <label>Confirm password <input type="password" name="passwordConfirmation" autocomplete="new-password" required>
+        <span class="notice" data-field-error="passwordConfirmation">${fieldErrors.passwordConfirmation ? escapeHtml(fieldErrors.passwordConfirmation) : ""}</span>
+      </label>
       <button type="submit">${renderIcon("key")}<span>Save credentials</span></button>
       <a class="action-link secondary" href="/">${renderIcon("terminal")}<span>Cancel for now</span></a>
     </form>
+    <script>
+      (() => {
+        const form = document.querySelector("[data-setup-account-form]");
+        if (!form) return;
+        const globalNotice = document.querySelector("[data-setup-account-error]");
+        const fieldNames = ["currentPassword", "email", "password", "passwordConfirmation"];
+        const setText = (selector, value) => {
+          const node = document.querySelector(selector);
+          if (node) node.textContent = value || "";
+        };
+        form.addEventListener("submit", async (event) => {
+          event.preventDefault();
+          for (const name of fieldNames) setText('[data-field-error="' + name + '"]', "");
+          if (globalNotice) globalNotice.textContent = "";
+          const submitter = form.querySelector('button[type="submit"]');
+          if (submitter) submitter.disabled = true;
+          try {
+            const response = await fetch(form.action, {
+              method: "POST",
+              headers: {
+                accept: "application/json",
+                "content-type": "application/x-www-form-urlencoded"
+              },
+              body: new URLSearchParams(new FormData(form))
+            });
+            const body = await response.json().catch(() => ({}));
+            if (response.ok) {
+              window.location.assign(body.redirect || "/");
+              return;
+            }
+            if (globalNotice) globalNotice.textContent = body.error || "Credential update failed.";
+            for (const field of body.clearFields || []) {
+              const input = form.elements.namedItem(field);
+              if (input && "value" in input) input.value = "";
+            }
+            for (const [field, message] of Object.entries(body.fieldErrors || {})) {
+              setText('[data-field-error="' + field + '"]', String(message || ""));
+            }
+          } catch {
+            form.submit();
+          } finally {
+            if (submitter) submitter.disabled = false;
+          }
+        });
+      })();
+    </script>
   </section>
 </main>`
   });

@@ -33,6 +33,44 @@ function normalizeIp(value: string): string {
   return value;
 }
 
+function isCidr(value: string): boolean {
+  return value.includes("/");
+}
+
+function parseIpv4(value: string): number | undefined {
+  const parts = normalizeIp(value).split(".");
+  if (parts.length !== 4) {
+    return undefined;
+  }
+  let result = 0;
+  for (const part of parts) {
+    if (!/^\d+$/.test(part)) {
+      return undefined;
+    }
+    const octet = Number(part);
+    if (octet < 0 || octet > 255) {
+      return undefined;
+    }
+    result = (result << 8) | octet;
+  }
+  return result >>> 0;
+}
+
+function ipMatchesRule(ip: string, rule: string): boolean {
+  if (!isCidr(rule)) {
+    return normalizeIp(ip) === normalizeIp(rule);
+  }
+  const [base, prefixRaw] = rule.split("/");
+  const prefix = Number(prefixRaw);
+  const ipValue = parseIpv4(ip);
+  const baseValue = parseIpv4(base ?? "");
+  if (ipValue === undefined || baseValue === undefined || !Number.isInteger(prefix) || prefix < 0 || prefix > 32) {
+    return false;
+  }
+  const mask = prefix === 0 ? 0 : (0xffffffff << (32 - prefix)) >>> 0;
+  return (ipValue & mask) === (baseValue & mask);
+}
+
 function headerValue(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value;
 }
@@ -120,7 +158,7 @@ export function createAdminAccessGate(input: {
     isAllowed(request) {
       const ip = requestIp(request, { mode, trustedProxyIps });
       const mac = requestDeviceMac(request, { mode, trustedProxyIps });
-      return allowedIps.has(ip) || Boolean(mac && allowedMacs.has(mac));
+      return [...allowedIps].some((rule) => ipMatchesRule(ip, rule)) || Boolean(mac && allowedMacs.has(mac));
     },
     addRule(input) {
       if (input.kind === "ip") {

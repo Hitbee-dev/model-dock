@@ -73,6 +73,83 @@ async function apiFetch(path: string, request: IncomingMessage, init: RequestIni
   });
 }
 
+type SetupField = "currentPassword" | "email" | "password" | "passwordConfirmation";
+
+type SetupFormState = {
+  error: string;
+  fieldErrors: Partial<Record<SetupField, string>>;
+  clearFields: SetupField[];
+  values: { email?: string };
+};
+
+async function readApiError(response: Response): Promise<string> {
+  try {
+    const body = (await response.json()) as { error?: string };
+    return body.error ?? "unknown_error";
+  } catch {
+    return "unknown_error";
+  }
+}
+
+function setupFormState(errorCode: string, form: URLSearchParams): SetupFormState {
+  const email = String(form.get("email") ?? "");
+  switch (errorCode) {
+    case "email_required":
+      return {
+        error: "Enter the admin ID or email.",
+        fieldErrors: { email: "This field is required." },
+        clearFields: ["email"],
+        values: {}
+      };
+    case "password_required":
+      return {
+        error: "Enter a new password.",
+        fieldErrors: { password: "This field is required." },
+        clearFields: ["password"],
+        values: { email }
+      };
+    case "password_too_short":
+      return {
+        error: "The new password must be at least 12 characters.",
+        fieldErrors: { password: "Use at least 12 characters." },
+        clearFields: ["password", "passwordConfirmation"],
+        values: { email }
+      };
+    case "password_confirmation_mismatch":
+      return {
+        error: "The confirmation password does not match.",
+        fieldErrors: { passwordConfirmation: "Re-enter the same new password." },
+        clearFields: ["passwordConfirmation"],
+        values: { email }
+      };
+    case "current_password_required":
+      return {
+        error: "Enter the current password before changing an existing account.",
+        fieldErrors: { currentPassword: "Current password is required." },
+        clearFields: ["currentPassword"],
+        values: { email }
+      };
+    case "current_password_invalid":
+      return {
+        error: "The current password is incorrect.",
+        fieldErrors: { currentPassword: "Current password is incorrect." },
+        clearFields: ["currentPassword"],
+        values: { email }
+      };
+    default:
+      return {
+        error: "Credential update failed. Check the highlighted fields.",
+        fieldErrors: {},
+        clearFields: [],
+        values: { email }
+      };
+  }
+}
+
+function wantsJson(request: IncomingMessage): boolean {
+  return (request.headers.accept ?? "").includes("application/json");
+}
+
 async function requireAdminSession(request: IncomingMessage): Promise<boolean> {
   try {
     const apiResponse = await apiFetch("/auth/session", request);
@@ -145,7 +222,7 @@ const server = createServer(async (request, response) => {
     });
     if (!apiResponse.ok) {
       response.writeHead(401, { "content-type": "text/html; charset=utf-8" });
-      response.end(renderLoginPage(locale, "Invalid admin credentials."));
+      response.end(renderLoginPage(locale, "Invalid admin credentials.", { email: String(form.get("email") ?? "") }));
       return;
     }
     const body = (await apiResponse.json()) as { csrfToken: string; user: { mustChangePassword?: boolean } };
@@ -180,14 +257,33 @@ const server = createServer(async (request, response) => {
       })
     });
     if (!apiResponse.ok) {
+      const state = setupFormState(await readApiError(apiResponse), form);
+      if (wantsJson(request)) {
+        response.writeHead(400, { "content-type": "application/json" });
+        response.end(
+          JSON.stringify({
+            error: state.error,
+            fieldErrors: state.fieldErrors,
+            clearFields: state.clearFields
+          })
+        );
+        return;
+      }
       response.writeHead(400, { "content-type": "text/html; charset=utf-8" });
       response.end(
         renderSetupAccountPage({
           csrfToken: cookieValue(request, "modeldock_csrf"),
-          error: "Credential update failed. Use a valid ID and a 12+ character password.",
-          locale
+          error: state.error,
+          fieldErrors: state.fieldErrors,
+          locale,
+          values: state.values
         })
       );
+      return;
+    }
+    if (wantsJson(request)) {
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify({ ok: true, redirect: "/" }));
       return;
     }
     redirect(response, "/");

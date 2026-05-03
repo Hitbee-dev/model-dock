@@ -243,8 +243,23 @@ export function createApiHandler(options: ApiHandlerOptions) {
         }
 
         const body = await readInput(request);
-        if (!body.email || !body.password || body.password !== body.passwordConfirmation) {
-          sendJson(response, 400, { error: "invalid_credentials_update" });
+        const email = body.email?.trim() ?? "";
+        const password = body.password ?? "";
+        const passwordConfirmation = body.passwordConfirmation ?? "";
+        if (!email) {
+          sendJson(response, 400, { error: "email_required" });
+          return;
+        }
+        if (!password) {
+          sendJson(response, 400, { error: "password_required" });
+          return;
+        }
+        if (password.length < 12) {
+          sendJson(response, 400, { error: "password_too_short" });
+          return;
+        }
+        if (password !== passwordConfirmation) {
+          sendJson(response, 400, { error: "password_confirmation_mismatch" });
           return;
         }
 
@@ -255,17 +270,23 @@ export function createApiHandler(options: ApiHandlerOptions) {
         }
         if (
           !currentUser.mustChangePassword &&
-          (!body.currentPassword ||
-            !verifyPassword({ password: body.currentPassword, stored: currentUser.passwordHash }))
+          !body.currentPassword
         ) {
           sendJson(response, 403, { error: "current_password_required" });
+          return;
+        }
+        if (
+          !currentUser.mustChangePassword &&
+          !verifyPassword({ password: body.currentPassword, stored: currentUser.passwordHash })
+        ) {
+          sendJson(response, 403, { error: "current_password_invalid" });
           return;
         }
 
         const user = await options.authStore.updateOwnCredentials({
           userId: session.userId,
-          email: body.email,
-          passwordHash: hashPassword({ password: body.password })
+          email,
+          passwordHash: hashPassword({ password })
         });
         sendJson(response, 200, {
           user: { id: user.id, email: user.email, role: user.role, mustChangePassword: user.mustChangePassword ?? false }

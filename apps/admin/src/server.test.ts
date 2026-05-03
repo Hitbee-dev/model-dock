@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { createAdminAccessGate } from "./access.js";
-import { renderAccessSettingsPage, renderApprovalsPage, renderLoginPage, renderSubscriptionRuntimesPage } from "./pages.js";
+import {
+  renderAccessSettingsPage,
+  renderApprovalsPage,
+  renderLoginPage,
+  renderSetupAccountPage,
+  renderSubscriptionRuntimesPage
+} from "./pages.js";
 
 describe("admin scaffold", () => {
   it("documents a dedicated admin service", () => {
@@ -33,7 +39,21 @@ describe("admin scaffold", () => {
 
     expect(page).toContain("admin/admin");
     expect(page).toContain('value="admin"');
+    expect(page).not.toContain('autocomplete="current-password" value="admin"');
     expect(page).toContain('action="/login"');
+  });
+
+  it("preserves valid setup fields and marks only the failing field", () => {
+    const page = renderSetupAccountPage({
+      error: "The current password is incorrect.",
+      fieldErrors: { currentPassword: "Current password is incorrect." },
+      values: { email: "owner@example.test" }
+    });
+
+    expect(page).toContain('value="owner@example.test"');
+    expect(page).not.toContain('value="new-admin-password"');
+    expect(page).toContain("data-setup-account-form");
+    expect(page).toContain("Current password is incorrect.");
   });
 
   it("allows admin access when either IP or device fingerprint matches", () => {
@@ -63,6 +83,20 @@ describe("admin scaffold", () => {
       } as never)
     ).toBe(false);
     expect(gate.isAllowed({ headers: {}, socket: { remoteAddress: "198.51.100.20" } } as never)).toBe(false);
+  });
+
+  it("does not trust localhost host headers for debug access", () => {
+    const debugGate = createAdminAccessGate({ mode: "debug" });
+    const request = { headers: { host: "127.0.0.1:3001" }, socket: { remoteAddress: "10.244.0.1" } } as never;
+
+    expect(debugGate.isAllowed(request)).toBe(false);
+  });
+
+  it("allows explicit CIDR rules for local Kubernetes port-forward sources", () => {
+    const gate = createAdminAccessGate({ allowedIps: "192.168.194.0/25", mode: "debug" });
+
+    expect(gate.isAllowed({ headers: {}, socket: { remoteAddress: "192.168.194.1" } } as never)).toBe(true);
+    expect(gate.isAllowed({ headers: {}, socket: { remoteAddress: "192.168.195.1" } } as never)).toBe(false);
   });
 
   it("renders editable admin access rules", () => {
