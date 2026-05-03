@@ -32,7 +32,7 @@
 - [x] Add public signup rate limiting scaffold.
 - [x] Add Cloudflare Access validation contract.
 - [x] Wire Cloudflare Access validation into admin runtime middleware.
-- [ ] Wire Cloudflare Access public key/JWT verifier for production validation.
+- [x] Wire Cloudflare Access public key/JWT verifier for production validation.
 
 ## Phase 3 - LiteLLM integration
 

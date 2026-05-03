@@ -1,3 +1,4 @@
+import { webcrypto } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import {
   approveRegistration,
@@ -5,6 +6,7 @@ import {
   canAccessAdmin,
   canBootstrapOwner,
   createPendingRegistration,
+  createCloudflareAccessVerifier,
   createSessionTokenPair,
   hashPassword,
   hashSessionToken,
@@ -13,6 +15,38 @@ import {
   verifyPassword,
   verifyTokenHash
 } from "./index.js";
+
+function encodeJson(value: unknown): string {
+  return Buffer.from(JSON.stringify(value)).toString("base64url");
+}
+
+async function signedAccessJwt(input: { payload: Record<string, unknown>; kid?: string }) {
+  const keyPair = await webcrypto.subtle.generateKey(
+    {
+      name: "RSASSA-PKCS1-v1_5",
+      modulusLength: 2048,
+      publicExponent: new Uint8Array([1, 0, 1]),
+      hash: "SHA-256"
+    },
+    true,
+    ["sign", "verify"]
+  );
+  const kid = input.kid ?? "test-key";
+  const header = encodeJson({ alg: "RS256", kid, typ: "JWT" });
+  const payload = encodeJson(input.payload);
+  const signingInput = `${header}.${payload}`;
+  const signature = await webcrypto.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    keyPair.privateKey,
+    Buffer.from(signingInput)
+  );
+  const jwk = (await webcrypto.subtle.exportKey("jwk", keyPair.publicKey)) as Record<string, unknown>;
+
+  return {
+    jwt: `${signingInput}.${Buffer.from(signature).toString("base64url")}`,
+    jwk: { ...jwk, kid, alg: "RS256", use: "sig" }
+  };
+}
 
 describe("auth contracts", () => {
   it("keeps admin access limited to owner and admin roles", () => {
@@ -136,5 +170,62 @@ describe("auth contracts", () => {
         nowEpochSeconds: 1_700_000_000
       })
     ).resolves.toMatchObject({ allowed: false, reason: "invalid_cf_access_jwt" });
+  });
+
+  it("verifies Cloudflare Access JWTs with fetched signing keys", async () => {
+    const { jwt, jwk } = await signedAccessJwt({
+      payload: {
+        email: "owner@example.com",
+        aud: ["modeldock-admin"],
+        iss: "https://team.cloudflareaccess.com",
+        exp: 1_800_000_000
+      }
+    });
+    const requestedUrls: string[] = [];
+    const verifier = createCloudflareAccessVerifier({
+      teamDomain: "team.cloudflareaccess.com",
+      fetch: async (url) => {
+        requestedUrls.push(url);
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return { keys: [jwk] };
+          }
+        };
+      }
+    });
+
+    await expect(verifier.verifyJwt(jwt)).resolves.toMatchObject({
+      email: "owner@example.com",
+      aud: ["modeldock-admin"]
+    });
+    expect(requestedUrls).toEqual(["https://team.cloudflareaccess.com/cdn-cgi/access/certs"]);
+  });
+
+  it("rejects Cloudflare Access JWTs with invalid signatures", async () => {
+    const { jwt, jwk } = await signedAccessJwt({
+      payload: {
+        email: "owner@example.com",
+        aud: ["modeldock-admin"],
+        iss: "https://team.cloudflareaccess.com",
+        exp: 1_800_000_000
+      }
+    });
+    const verifier = createCloudflareAccessVerifier({
+      teamDomain: "team.cloudflareaccess.com",
+      fetch: async () => ({
+        ok: true,
+        status: 200,
+        async json() {
+          return { keys: [jwk] };
+        }
+      })
+    });
+
+    const parts = jwt.split(".");
+    parts[2] = `${parts[2]?.startsWith("A") ? "B" : "A"}${parts[2]?.slice(1) ?? ""}`;
+    const tampered = parts.join(".");
+    await expect(verifier.verifyJwt(tampered)).rejects.toThrow("invalid");
   });
 });

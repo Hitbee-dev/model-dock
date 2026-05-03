@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import { createCloudflareAccessVerifier } from "@modeldock/auth";
 import { createMemoryAuthStore } from "./auth-store.js";
 import { createApiHandler } from "./http.js";
 import { createPostgresAuthStoreFromEnv } from "./postgres-auth-store.js";
@@ -21,17 +22,25 @@ const authStore = await createPostgresAuthStoreFromEnv({
   nodeEnv: process.env.NODE_ENV
 });
 
+const cloudflareAccessConfig = {
+  enabled: process.env.CLOUDFLARE_ACCESS_ENABLED === "true",
+  teamDomain: process.env.CLOUDFLARE_ACCESS_TEAM_DOMAIN ?? "",
+  allowedAudiences: (process.env.CLOUDFLARE_ACCESS_ALLOWED_AUDIENCES ?? "").split(",").filter(Boolean),
+  allowedEmails: (process.env.CLOUDFLARE_ACCESS_ALLOWED_EMAILS ?? "").split(",").filter(Boolean)
+};
+
 const server = createServer(
   createApiHandler({
     adminAppUrl: process.env.ADMIN_APP_URL ?? "http://127.0.0.1:3001",
     adminApiToken: process.env.ADMIN_API_TOKEN,
     authStore,
-    cloudflareAccessConfig: {
-      enabled: process.env.CLOUDFLARE_ACCESS_ENABLED === "true",
-      teamDomain: process.env.CLOUDFLARE_ACCESS_TEAM_DOMAIN ?? "",
-      allowedAudiences: (process.env.CLOUDFLARE_ACCESS_ALLOWED_AUDIENCES ?? "").split(",").filter(Boolean),
-      allowedEmails: (process.env.CLOUDFLARE_ACCESS_ALLOWED_EMAILS ?? "").split(",").filter(Boolean)
-    },
+    cloudflareAccessConfig,
+    cloudflareAccessVerifier: cloudflareAccessConfig.enabled
+      ? createCloudflareAccessVerifier({
+          teamDomain: cloudflareAccessConfig.teamDomain,
+          fetch: async (url: string) => fetch(url)
+        })
+      : undefined,
     providerValidationFetch: async (url, init) => fetch(url, init),
     rateLimiter: createMemoryRateLimiter(),
     registrations,

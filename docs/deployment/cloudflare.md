@@ -34,6 +34,13 @@ Expose only the intended app, API, and admin HTTP services through named tunnel 
 
 Protect the randomized admin hostname with Cloudflare Access. Allow only owner/admin identities or a managed group. Require MFA at the identity provider and still enforce application-level admin roles.
 
+When `CLOUDFLARE_ACCESS_ENABLED=true`, ModelDock validates the `Cf-Access-Jwt-Assertion`
+header at the API origin. The verifier fetches JWK signing keys from
+`https://<team>.cloudflareaccess.com/cdn-cgi/access/certs`, verifies RS256
+signatures, and then enforces issuer, audience, expiration, and optional allowed
+admin emails. Keep `CLOUDFLARE_ACCESS_ALLOWED_AUDIENCES` scoped to the admin
+Access application.
+
 ## WAF, rate limiting, and Turnstile
 
 Enable managed WAF rules and rate limits for login, signup, API, chat completions, provider validation, token refresh, and owner bootstrap. Add Turnstile where abuse risk justifies it.
