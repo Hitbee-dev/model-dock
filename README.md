@@ -217,6 +217,7 @@ Public docs include:
 - [llms-full.txt](llms-full.txt)
 - [robots.txt](robots.txt)
 - [sitemap.xml](sitemap.xml)
+- [Discovery and indexing checklist](docs/discovery.md)
 - Markdown docs under [docs](docs)
 - Ecosystem context pages under [docs/comparisons](docs/comparisons)
 

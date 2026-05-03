@@ -2,26 +2,70 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://modeldock.example.com/</loc>
-    <lastmod>2026-05-02</lastmod>
+    <lastmod>2026-05-03</lastmod>
   </url>
   <url>
     <loc>https://modeldock.example.com/docs/quickstart</loc>
-    <lastmod>2026-05-02</lastmod>
+    <lastmod>2026-05-03</lastmod>
   </url>
   <url>
     <loc>https://modeldock.example.com/docs/architecture</loc>
-    <lastmod>2026-05-02</lastmod>
+    <lastmod>2026-05-03</lastmod>
   </url>
   <url>
-    <loc>https://modeldock.example.com/docs/litellm</loc>
-    <lastmod>2026-05-02</lastmod>
+    <loc>https://modeldock.example.com/docs/auth</loc>
+    <lastmod>2026-05-03</lastmod>
   </url>
   <url>
     <loc>https://modeldock.example.com/docs/byok</loc>
-    <lastmod>2026-05-02</lastmod>
+    <lastmod>2026-05-03</lastmod>
+  </url>
+  <url>
+    <loc>https://modeldock.example.com/docs/credits</loc>
+    <lastmod>2026-05-03</lastmod>
+  </url>
+  <url>
+    <loc>https://modeldock.example.com/docs/litellm</loc>
+    <lastmod>2026-05-03</lastmod>
+  </url>
+  <url>
+    <loc>https://modeldock.example.com/docs/mcp</loc>
+    <lastmod>2026-05-03</lastmod>
   </url>
   <url>
     <loc>https://modeldock.example.com/docs/security</loc>
-    <lastmod>2026-05-02</lastmod>
+    <lastmod>2026-05-03</lastmod>
+  </url>
+  <url>
+    <loc>https://modeldock.example.com/docs/storage-rag</loc>
+    <lastmod>2026-05-03</lastmod>
+  </url>
+  <url>
+    <loc>https://modeldock.example.com/docs/discovery</loc>
+    <lastmod>2026-05-03</lastmod>
+  </url>
+  <url>
+    <loc>https://modeldock.example.com/docs/deployment/docker</loc>
+    <lastmod>2026-05-03</lastmod>
+  </url>
+  <url>
+    <loc>https://modeldock.example.com/docs/deployment/production-docker</loc>
+    <lastmod>2026-05-03</lastmod>
+  </url>
+  <url>
+    <loc>https://modeldock.example.com/docs/deployment/operations</loc>
+    <lastmod>2026-05-03</lastmod>
+  </url>
+  <url>
+    <loc>https://modeldock.example.com/docs/deployment/cloudflare</loc>
+    <lastmod>2026-05-03</lastmod>
+  </url>
+  <url>
+    <loc>https://modeldock.example.com/docs/deployment/kubernetes</loc>
+    <lastmod>2026-05-03</lastmod>
+  </url>
+  <url>
+    <loc>https://modeldock.example.com/docs/faq</loc>
+    <lastmod>2026-05-03</lastmod>
   </url>
 </urlset>

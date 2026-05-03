@@ -25,6 +25,7 @@ const pages = [
   { source: "docs/mcp.md", output: "docs/mcp.html", title: "MCP" },
   { source: "docs/security.md", output: "docs/security.html", title: "Security" },
   { source: "docs/storage-rag.md", output: "docs/storage-rag.html", title: "Storage and RAG" },
+  { source: "docs/discovery.md", output: "docs/discovery.html", title: "Discovery and Indexing" },
   { source: "docs/deployment/docker.md", output: "docs/deployment/docker.html", title: "Docker Deployment" },
   {
     source: "docs/deployment/production-docker.md",
