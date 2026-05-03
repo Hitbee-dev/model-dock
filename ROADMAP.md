@@ -44,7 +44,7 @@
 - [x] Add spend sync ledger contract.
 - [x] Add LiteLLM spend log normalization and client query contract.
 - [x] Add live spend sync job.
-- [ ] Add mock and live LiteLLM integration tests.
+- [x] Add mock and live LiteLLM integration tests.
 
 ## Phase 4 - BYOK and provider vault
 

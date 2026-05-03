@@ -4,12 +4,11 @@ This table tracks the LiteLLM version range verified with ModelDock.
 
 | ModelDock version | LiteLLM image | Status | Notes |
 | --- | --- | --- | --- |
-| unreleased | `ghcr.io/berriai/litellm:v1.57.8` | Scaffold only | Compose config includes LiteLLM; real API integration tests are planned. |
+| unreleased | `ghcr.io/berriai/litellm:v1.57.8` | Mock verified | Compose config includes LiteLLM; mock proxy tests cover provisioning, virtual keys, and spend sync. |
 
 ## Next verification steps
 
-- Add mock tests for user creation, virtual key generation, budgets, model allowlists, and spend tracking.
-- Add optional live integration tests guarded by environment variables.
+- Run optional live integration tests against a private LiteLLM proxy before release.
 - Fail closed when budget enforcement status is unknown.
 
-Last updated: 2026-05-02
+Last updated: 2026-05-03
