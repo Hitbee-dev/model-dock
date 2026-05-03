@@ -103,6 +103,16 @@ const server = createServer(
         body: responseTextChunks(response)
       };
     },
+    litellmAdminFetch: async (url, init) => {
+      const response = await fetch(url, init);
+      return {
+        ok: response.ok,
+        status: response.status,
+        async json() {
+          return response.json();
+        }
+      };
+    },
     litellmBaseUrl: process.env.LITELLM_BASE_URL,
     litellmMasterKey: process.env.LITELLM_MASTER_KEY,
     providerValidationFetch: async (url, init) => fetch(url, init),

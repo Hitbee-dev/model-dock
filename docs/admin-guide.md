@@ -25,6 +25,28 @@ Cancelling the setup returns to the admin console and keeps `admin/admin`
 usable. Do this only for short local testing. Before sharing the service with
 anyone else, change the default credentials.
 
+## Operations console
+
+Open:
+
+```text
+http://127.0.0.1:3001
+```
+
+The admin home is the operator console for the current MVP. It shows:
+
+- LiteLLM gateway readiness without exposing the LiteLLM master key.
+- Active users, pending setup users, and pending signup requests.
+- User credit balances and the matching ModelDock-side LiteLLM budget record.
+- Approval forms that create a private setup link for the approved user.
+- Credit grant forms for issuing USD-denominated credits to a user.
+
+Credit grants are recorded in `credit_ledger_entries`, update the local
+`litellm_users.max_budget_usd` mapping, and call the server-only LiteLLM user
+budget update path when the gateway is configured. The admin API returns
+`synced`, `not_configured`, or `failed` so the UI can surface retry state as the
+console matures.
+
 ## Approval workflow
 
 1. A user submits a signup request from the user app.
@@ -102,4 +124,4 @@ Before connecting a domain:
 - Require MFA for admin identities.
 - Keep application-level owner/admin role checks enabled.
 
-Last updated: 2026-05-03
+Last updated: 2026-05-04

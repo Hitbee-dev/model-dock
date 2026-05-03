@@ -19,9 +19,44 @@ export type AuthSessionRecord = {
   expiresAt: string;
 };
 
+export type AdminUserSummary = {
+  id: string;
+  email: string;
+  displayName?: string;
+  role: ModelDockRole;
+  status: "active" | "pending_approval" | "pending_setup";
+  mustChangePassword: boolean;
+  createdAt?: string;
+  approvedAt?: string;
+  creditBalanceUsd: number;
+  litellm: {
+    budgetDuration?: string;
+    litellmUserId?: string;
+    maxBudgetUsd?: number;
+    virtualKeyCount: number;
+  };
+};
+
+export type AdminCreditGrant = {
+  id: string;
+  userId: string;
+  amountUsd: number;
+  reason: string;
+  source: "grant";
+  createdAt: string;
+  balanceUsd: number;
+};
+
 export type AuthStore = {
   findActiveUserByEmail(email: string): Promise<AuthUser | undefined>;
   findActiveUserById(id: string): Promise<AuthUser | undefined>;
+  grantUserCredits(input: {
+    actorId: string;
+    amountUsd: number;
+    reason: string;
+    userId: string;
+  }): Promise<AdminCreditGrant>;
+  listUsersForAdmin(): Promise<AdminUserSummary[]>;
   completeCredentialSetup(input: {
     email: string;
     passwordHash: PasswordHash;
@@ -48,7 +83,16 @@ export type AuthStore = {
 export function createMemoryAuthStore(users: AuthUser[] = []): AuthStore {
   const usersByEmail = new Map(users.map((user) => [normalizeEmail(user.email), user]));
   const pendingSetupByToken = new Map<string, { email: string; expiresAt: string; userId: string }>();
+  const pendingSetupByUser = new Map<string, { email: string; expiresAt: string }>();
+  const creditEntries: AdminCreditGrant[] = [];
+  const litellmBudgets = new Map<string, { maxBudgetUsd: number; budgetDuration: string }>();
   const sessions = new Map<string, AuthSessionRecord>();
+
+  function balanceFor(userId: string): number {
+    return creditEntries
+      .filter((entry) => entry.userId === userId)
+      .reduce((total, entry) => total + entry.amountUsd, 0);
+  }
 
   return {
     async findActiveUserByEmail(email) {
@@ -79,8 +123,31 @@ export function createMemoryAuthStore(users: AuthUser[] = []): AuthStore {
         mustChangePassword: false
       };
       pendingSetupByToken.delete(input.setupTokenHash);
+      pendingSetupByUser.delete(setup.userId);
       usersByEmail.set(email, user);
       return user;
+    },
+    async grantUserCredits(input) {
+      if (!Number.isFinite(input.amountUsd) || input.amountUsd <= 0) {
+        throw new Error("Credit grant amount must be positive.");
+      }
+      const user = [...usersByEmail.values()].find((candidate) => candidate.id === input.userId);
+      if (!user && !pendingSetupByUser.has(input.userId)) {
+        throw new Error("User was not found.");
+      }
+      const createdAt = new Date().toISOString();
+      const entry: AdminCreditGrant = {
+        id: `credit_${crypto.randomUUID()}`,
+        userId: input.userId,
+        amountUsd: input.amountUsd,
+        reason: input.reason || "admin_credit_grant",
+        source: "grant",
+        createdAt,
+        balanceUsd: balanceFor(input.userId) + input.amountUsd
+      };
+      creditEntries.push(entry);
+      litellmBudgets.set(input.userId, { maxBudgetUsd: entry.balanceUsd, budgetDuration: "30d" });
+      return entry;
     },
     async ensureDebugAdmin(input) {
       const email = normalizeEmail(input.email);
@@ -110,6 +177,45 @@ export function createMemoryAuthStore(users: AuthUser[] = []): AuthStore {
         expiresAt: input.setupTokenExpiresAt,
         userId: input.userId
       });
+      pendingSetupByUser.set(input.userId, {
+        email,
+        expiresAt: input.setupTokenExpiresAt
+      });
+    },
+    async listUsersForAdmin() {
+      const activeUsers: AdminUserSummary[] = [...usersByEmail.values()].map((user) => {
+        const budget = litellmBudgets.get(user.id);
+        return {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          status: "active",
+          mustChangePassword: user.mustChangePassword ?? false,
+          creditBalanceUsd: balanceFor(user.id),
+          litellm: {
+            budgetDuration: budget?.budgetDuration,
+            maxBudgetUsd: budget?.maxBudgetUsd,
+            virtualKeyCount: 0
+          }
+        };
+      });
+      const pendingUsers: AdminUserSummary[] = [...pendingSetupByUser.entries()].map(([id, user]) => {
+        const budget = litellmBudgets.get(id);
+        return {
+          id,
+          email: user.email,
+          role: "user",
+          status: "pending_setup",
+          mustChangePassword: false,
+          creditBalanceUsd: balanceFor(id),
+          litellm: {
+            budgetDuration: budget?.budgetDuration,
+            maxBudgetUsd: budget?.maxBudgetUsd,
+            virtualKeyCount: 0
+          }
+        };
+      });
+      return [...activeUsers, ...pendingUsers].sort((left, right) => left.email.localeCompare(right.email));
     },
     async updateOwnCredentials(input) {
       const nextEmail = normalizeEmail(input.email);

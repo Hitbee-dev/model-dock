@@ -28,6 +28,17 @@ Initial responsibilities:
 
 The initial spend sync contract reads LiteLLM `/spend/logs`, normalizes rows into ledger-safe records, and drops prompt, response, hashed-key, and secret-bearing fields before callers receive the result.
 
+## Current admin surface
+
+The admin home is intended to become the primary LiteLLM operations wrapper for
+ModelDock. It now reads the configured LiteLLM gateway health, shows users,
+pending approvals, credit balances, and ModelDock-side LiteLLM budget mappings.
+
+Credit grants are persisted in the ModelDock ledger, mirrored to the local
+LiteLLM budget mapping, and then sent through a server-only LiteLLM user budget
+update call. The admin API reports `synced`, `not_configured`, or `failed`
+without returning the master key or any virtual key material to the browser.
+
 ## Security caveats
 
 Never expose the LiteLLM master key to browsers. Do not expose LiteLLM Admin UI publicly by default.
@@ -40,4 +51,4 @@ Chat streaming must be server-mediated. The API authenticates the user session, 
 - [Credits](credits.md)
 - [Security](security.md)
 
-Last updated: 2026-05-03
+Last updated: 2026-05-04

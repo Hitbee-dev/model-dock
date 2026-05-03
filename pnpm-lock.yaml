@@ -59,6 +59,9 @@ importers:
       '@modeldock/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@modeldock/litellm':
+        specifier: workspace:*
+        version: link:../../packages/litellm
       '@modeldock/rag':
         specifier: workspace:*
         version: link:../../packages/rag

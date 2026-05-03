@@ -50,7 +50,7 @@ describe("LiteLLM helpers", () => {
     ).toThrow("Invalid LiteLLM credential");
   });
 
-  it("creates users and virtual keys through server-side LiteLLM endpoints", async () => {
+	  it("creates users and virtual keys through server-side LiteLLM endpoints", async () => {
     const calls: Array<{ url: string; body?: string; authorization?: string }> = [];
     const fetch: LiteLLMFetch = async (url, init) => {
       calls.push({ url, body: init.body, authorization: init.headers.authorization });
@@ -70,10 +70,35 @@ describe("LiteLLM helpers", () => {
     expect(calls.map((call) => call.url)).toEqual(["http://litellm:4000/user/new", "http://litellm:4000/key/generate"]);
     expect(calls.every((call) => call.authorization === "Bearer server-only")).toBe(true);
     expect(calls[0]?.body).toContain("\"max_budget\":5");
-    expect(key.keyAlias).toBe("user_1-default");
+	    expect(key.keyAlias).toBe("user_1-default");
+	  });
+
+  it("updates LiteLLM user budgets through the isolated client", async () => {
+    const calls: Array<{ url: string; body?: string; authorization?: string }> = [];
+    const fetch: LiteLLMFetch = async (url, init) => {
+      calls.push({ url, body: init.body, authorization: init.headers.authorization });
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return { user_id: "user_1" };
+        }
+      };
+    };
+
+    const client = createLiteLLMClient({ baseUrl: "http://litellm:4000", masterKey: "server-only", fetch });
+    await client.updateUser({ userId: "user_1", maxBudgetUsd: 12.5, budgetDuration: "30d" });
+
+    expect(calls).toEqual([
+      {
+        url: "http://litellm:4000/user/update",
+        body: "{\"user_id\":\"user_1\",\"max_budget\":12.5,\"budget_duration\":\"30d\"}",
+        authorization: "Bearer server-only"
+      }
+    ]);
   });
 
-  it("fails closed when LiteLLM does not return a virtual key", async () => {
+	  it("fails closed when LiteLLM does not return a virtual key", async () => {
     const fetch: LiteLLMFetch = async () => ({
       ok: true,
       status: 200,

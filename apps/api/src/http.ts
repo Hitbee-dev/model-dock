@@ -18,7 +18,8 @@ import {
   type SubscriptionRuntimeCommandRunner,
   type SubscriptionRuntimeConfig
 } from "@modeldock/byok";
-import type { AuthStore } from "./auth-store.js";
+import { createLiteLLMClient, createLiteLLMHeaders, type LiteLLMFetch } from "@modeldock/litellm";
+import type { AdminCreditGrant, AuthStore } from "./auth-store.js";
 import { streamLiteLLMChat, type ChatCompletionStreamFetch, type ChatRagRetriever } from "./chat-stream.js";
 import { headerValue, parseCookies, readBody, readInput, sendJson } from "./http-utils.js";
 import {
@@ -36,6 +37,11 @@ import type { RegistrationStore } from "./registrations.js";
 export type ApiHandlerOptions = AdminGuardOptions & {
   authStore: AuthStore;
   chatCompletionFetch: ChatCompletionStreamFetch;
+  litellmAdminFetch?: LiteLLMFetch;
+  litellmGatewayFetch?: (url: string, init: { method: string; headers?: Record<string, string> }) => Promise<{
+    ok: boolean;
+    status: number;
+  }>;
   litellmBaseUrl?: string;
   litellmMasterKey?: string;
   providerValidationFetch: ProviderValidationFetch;
@@ -62,6 +68,16 @@ const dummyPasswordHash: PasswordHash = {
   hash: "UzoWV9uLV0zG2RzhrpMrxINuXNNlOy3XEpcnLej_JV8"
 };
 
+type LiteLLMGatewayStatus = {
+  baseUrl?: string;
+  configured: boolean;
+  masterKeyConfigured: boolean;
+  status: "not_configured" | "ready" | "unreachable" | "unhealthy";
+  statusCode?: number;
+};
+
+type LiteLLMBudgetSyncStatus = "failed" | "not_configured" | "synced";
+
 function clientKey(request: IncomingMessage, action: string): string {
   return `${action}:${request.socket.remoteAddress ?? "unknown"}`;
 }
@@ -80,6 +96,14 @@ function requireSessionSecret(options: ApiHandlerOptions): string {
   }
 
   return options.sessionSecret;
+}
+
+function hasUsableSecret(value: string | undefined): value is string {
+  return Boolean(value && !value.startsWith("replace-with-"));
+}
+
+function normalizeLiteLLMBaseUrl(value: string): string {
+  return value.replace(/\/+$/, "");
 }
 
 function createCredentialSetupToken(): { hash: string; token: string } {
@@ -110,6 +134,97 @@ async function getCurrentSession(request: IncomingMessage, options: ApiHandlerOp
 async function getAdminSession(request: IncomingMessage, options: ApiHandlerOptions) {
   const session = await getCurrentSession(request, options);
   return session && canAccessAdmin(session.role) ? session : undefined;
+}
+
+async function readLiteLLMGatewayStatus(options: ApiHandlerOptions): Promise<LiteLLMGatewayStatus> {
+  const baseUrl = options.litellmBaseUrl ? normalizeLiteLLMBaseUrl(options.litellmBaseUrl) : undefined;
+  const masterKey = hasUsableSecret(options.litellmMasterKey) ? options.litellmMasterKey : undefined;
+  const masterKeyConfigured = Boolean(masterKey);
+  if (!baseUrl || !masterKey) {
+    return {
+      baseUrl,
+      configured: false,
+      masterKeyConfigured,
+      status: "not_configured"
+    };
+  }
+
+  const gatewayFetch =
+    options.litellmGatewayFetch ??
+    (async (url: string, init: { method: string; headers?: Record<string, string> }) => fetch(url, init));
+  try {
+    const upstream = await gatewayFetch(`${baseUrl}/health/readiness`, {
+      method: "GET",
+      headers: createLiteLLMHeaders(masterKey)
+    });
+    return {
+      baseUrl,
+      configured: true,
+      masterKeyConfigured,
+      status: upstream.ok ? "ready" : "unhealthy",
+      statusCode: upstream.status
+    };
+  } catch {
+    return {
+      baseUrl,
+      configured: true,
+      masterKeyConfigured,
+      status: "unreachable"
+    };
+  }
+}
+
+async function syncLiteLLMUserBudget(
+  options: ApiHandlerOptions,
+  grant: AdminCreditGrant
+): Promise<LiteLLMBudgetSyncStatus> {
+  const baseUrl = options.litellmBaseUrl ? normalizeLiteLLMBaseUrl(options.litellmBaseUrl) : undefined;
+  const masterKey = hasUsableSecret(options.litellmMasterKey) ? options.litellmMasterKey : undefined;
+  if (!baseUrl || !masterKey) {
+    return "not_configured";
+  }
+
+  const litellmFetch =
+    options.litellmAdminFetch ??
+    (async (url, init) => {
+      const upstream = await fetch(url, init);
+      return {
+        ok: upstream.ok,
+        status: upstream.status,
+        async json() {
+          return upstream.json();
+        }
+      };
+    });
+  try {
+    await createLiteLLMClient({ baseUrl, masterKey, fetch: litellmFetch }).updateUser({
+      userId: grant.userId,
+      maxBudgetUsd: grant.balanceUsd,
+      budgetDuration: "30d"
+    });
+    return "synced";
+  } catch {
+    return "failed";
+  }
+}
+
+async function requireAdminSessionWithCsrf(request: IncomingMessage, options: ApiHandlerOptions) {
+  const session = await getAdminSession(request, options);
+  const csrfToken = headerValue(request.headers[csrfHeaderName]);
+  if (
+    !(await authorizeAdminRequest(request, options)) ||
+    !session ||
+    !csrfToken ||
+    !verifyTokenHash({
+      token: csrfToken,
+      expectedHash: session.csrfTokenHash,
+      secret: requireSessionSecret(options)
+    })
+  ) {
+    return undefined;
+  }
+
+  return session;
 }
 
 export function createApiHandler(options: ApiHandlerOptions) {
@@ -485,19 +600,68 @@ export function createApiHandler(options: ApiHandlerOptions) {
         return;
       }
 
+      if (request.method === "GET" && request.url === "/admin/overview") {
+        if (!(await authorizeAdminRequest(request, options)) || !(await getAdminSession(request, options))) {
+          sendJson(response, 403, { error: "admin_overview_requires_admin_host_and_token" });
+          return;
+        }
+        const [pending, users, gateway] = await Promise.all([
+          options.registrations.listPending(),
+          options.authStore.listUsersForAdmin(),
+          readLiteLLMGatewayStatus(options)
+        ]);
+        const activeUsers = users.filter((user) => user.status === "active").length;
+        const pendingSetup = users.filter((user) => user.status === "pending_setup").length;
+        const totalCreditBalanceUsd = users.reduce((total, user) => total + user.creditBalanceUsd, 0);
+        sendJson(response, 200, {
+          gateway,
+          pending,
+          summary: {
+            activeUsers,
+            pendingApprovals: pending.length,
+            pendingSetup,
+            totalCreditBalanceUsd
+          },
+          users
+        });
+        return;
+      }
+
+      const creditGrantMatch = request.url?.match(/^\/admin\/users\/([^/]+)\/credits$/);
+      if (request.method === "POST" && creditGrantMatch) {
+        const session = await requireAdminSessionWithCsrf(request, options);
+        if (!session) {
+          sendJson(response, 403, { error: "admin_credit_grant_requires_admin_host_session_and_csrf" });
+          return;
+        }
+        const userId = decodeURIComponent(creditGrantMatch[1] ?? "");
+        const body = await readInput(request);
+        const amountUsd = Number(body.amountUsd);
+        if (!Number.isFinite(amountUsd) || amountUsd <= 0 || amountUsd > 10_000) {
+          sendJson(response, 400, { error: "invalid_credit_amount" });
+          return;
+        }
+        const grant = await options.authStore.grantUserCredits({
+          actorId: session.userId,
+          amountUsd: Math.round(amountUsd * 100) / 100,
+          reason: String(body.reason ?? "admin_credit_grant").slice(0, 120),
+          userId
+        });
+        const syncStatus = await syncLiteLLMUserBudget(options, grant);
+        sendJson(response, 200, {
+          grant,
+          litellmBudget: {
+            budgetDuration: "30d",
+            maxBudgetUsd: grant.balanceUsd,
+            syncStatus
+          }
+        });
+        return;
+      }
+
       if (request.method === "POST" && request.url?.startsWith("/admin/approvals/")) {
-        const session = await getAdminSession(request, options);
-        const csrfToken = headerValue(request.headers[csrfHeaderName]);
-        if (
-          !(await authorizeAdminRequest(request, options)) ||
-          !session ||
-          !csrfToken ||
-          !verifyTokenHash({
-            token: csrfToken,
-            expectedHash: session.csrfTokenHash,
-            secret: requireSessionSecret(options)
-          })
-        ) {
+        const session = await requireAdminSessionWithCsrf(request, options);
+        if (!session) {
           sendJson(response, 403, { error: "admin_approval_requires_admin_host_and_token" });
           return;
         }
@@ -516,6 +680,11 @@ export function createApiHandler(options: ApiHandlerOptions) {
           setupToken: setupToken.token,
           setupTokenExpiresAt
         });
+        return;
+      }
+
+      if (request.url?.startsWith("/admin")) {
+        sendJson(response, 404, { error: "unknown_admin_api" });
         return;
       }
 

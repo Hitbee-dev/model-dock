@@ -28,6 +28,8 @@ export type LiteLLMUserCreateRequest = {
   modelAllowlist?: string[];
 };
 
+export type LiteLLMUserUpdateRequest = LiteLLMUserCreateRequest;
+
 export type LiteLLMRouteConfig = {
   modelName: string;
   provider: "openai" | "anthropic" | "gemini" | "openrouter" | "ollama" | "vllm" | "custom";
@@ -131,6 +133,10 @@ export function createLiteLLMClient(options: LiteLLMClientOptions) {
   return {
     async createUser(request: LiteLLMUserCreateRequest): Promise<LiteLLMUserCreateResponse> {
       await postJson(options, "/user/new", userPayload(request));
+      return { userId: request.userId };
+    },
+    async updateUser(request: LiteLLMUserUpdateRequest): Promise<LiteLLMUserCreateResponse> {
+      await postJson(options, "/user/update", userPayload(request));
       return { userId: request.userId };
     },
     async createVirtualKey(request: LiteLLMVirtualKeyCreateRequest): Promise<LiteLLMVirtualKeyCreateResponse> {

@@ -11,6 +11,7 @@ import { createMemoryRateLimiter } from "./rate-limit.js";
 import { createMemoryRegistrationStore, type RegistrationStore } from "./registrations.js";
 import type { ProviderValidationFetch } from "@modeldock/byok";
 import type { SubscriptionRuntimeCommandRunner, SubscriptionRuntimeConfig } from "@modeldock/byok";
+import type { LiteLLMFetch } from "@modeldock/litellm";
 
 async function* streamChunks(chunks: string[]): AsyncIterable<string> {
   yield* chunks;
@@ -64,8 +65,13 @@ export function createTestHandler(
     sessionSecret?: string;
     subscriptionRuntimeConfig?: SubscriptionRuntimeConfig;
     subscriptionRuntimeRunner?: SubscriptionRuntimeCommandRunner;
-    providerValidationFetch?: ProviderValidationFetch;
-    chatCompletionFetch?: ChatCompletionStreamFetch;
+	    providerValidationFetch?: ProviderValidationFetch;
+    litellmAdminFetch?: LiteLLMFetch;
+    litellmGatewayFetch?: (url: string, init: { method: string; headers?: Record<string, string> }) => Promise<{
+      ok: boolean;
+      status: number;
+    }>;
+	    chatCompletionFetch?: ChatCompletionStreamFetch;
     ragDocumentStore?: RagDocumentStore;
     ragObjectStorage?: RagObjectDeletionClient;
     ragRetriever?: ChatRagRetriever;
@@ -81,8 +87,18 @@ export function createTestHandler(
     chatCompletionFetch:
       input.chatCompletionFetch ??
       (async () => ({ ok: true, status: 200, body: streamChunks([": no stream configured\n", "data: [DONE]\n"]) })),
-    litellmBaseUrl: "http://litellm.test",
-    litellmMasterKey: "test-litellm-master-key",
+	    litellmBaseUrl: "http://litellm.test",
+    litellmAdminFetch:
+      input.litellmAdminFetch ??
+      (async () => ({
+        ok: true,
+        status: 200,
+        async json() {
+          return {};
+        }
+      })),
+    litellmGatewayFetch: input.litellmGatewayFetch ?? (async () => ({ ok: true, status: 200 })),
+	    litellmMasterKey: "test-litellm-master-key",
     providerValidationFetch: input.providerValidationFetch ?? (async () => ({ status: 200 })),
     ragDocumentStore: input.ragDocumentStore ?? createMemoryRagDocumentStore(),
     ragObjectStorage: input.ragObjectStorage,

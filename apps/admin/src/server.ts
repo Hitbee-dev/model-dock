@@ -2,15 +2,14 @@ import { createServer, type IncomingMessage, type ServerResponse } from "node:ht
 import type { SubscriptionRuntimeInvocationResult, SubscriptionRuntimeProbe } from "@modeldock/byok";
 import { resolveLocaleFromHeaders } from "@modeldock/ui";
 import { createAdminAccessGate } from "./access.js";
+import { renderAdminDashboardPage, type AdminDashboardOverview } from "./dashboard-page.js";
 import {
   renderAccessSettingsPage,
-  renderApprovalsPage,
   renderForbiddenPage,
   renderInvitationPage,
   renderLoginPage,
   renderSetupAccountPage,
   renderSubscriptionRuntimesPage,
-  type PendingApproval
 } from "./pages.js";
 
 const port = Number(process.env.PORT ?? 3001);
@@ -176,20 +175,26 @@ function hasValidFormCsrf(request: IncomingMessage, form: URLSearchParams): bool
 
 async function renderHome(request: IncomingMessage, response: ServerResponse) {
   const locale = resolveLocaleFromHeaders(request.headers);
-  const approvalsResponse = await apiFetch("/admin/approvals", request).catch(() => undefined);
-  if (!approvalsResponse || approvalsResponse.status === 403) {
+  const overviewResponse = await apiFetch("/admin/overview", request).catch(() => undefined);
+  if (!overviewResponse || overviewResponse.status === 403) {
     response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
     response.end(renderLoginPage(locale));
     return;
   }
-  const approvals =
-    approvalsResponse?.ok ? ((await approvalsResponse.json()) as { pending: PendingApproval[] }).pending : [];
+  const overview: AdminDashboardOverview = overviewResponse.ok
+    ? ((await overviewResponse.json()) as AdminDashboardOverview)
+    : {
+        gateway: { configured: false, masterKeyConfigured: false, status: "not_configured" },
+        pending: [],
+        summary: { activeUsers: 0, pendingApprovals: 0, pendingSetup: 0, totalCreditBalanceUsd: 0 },
+        users: []
+      };
   response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
   response.end(
-    renderApprovalsPage({
-      approvals,
+    renderAdminDashboardPage({
       csrfToken: cookieValue(request, "modeldock_csrf"),
-      locale
+      locale,
+      overview
     })
   );
 }
@@ -438,6 +443,31 @@ const server = createServer(async (request, response) => {
         setupUrl: setupUrl.toString()
       })
     );
+    return;
+  }
+
+  const creditGrantMatch = request.url?.match(/^\/users\/([^/]+)\/credits$/);
+  if (request.method === "POST" && creditGrantMatch) {
+    const form = await readForm(request);
+    if (!(await requireAdminSession(request))) {
+      renderLoginRequired(request, response);
+      return;
+    }
+    if (!hasValidFormCsrf(request, form)) {
+      response.writeHead(403, { "content-type": "text/html; charset=utf-8" });
+      response.end(renderForbiddenPage(locale));
+      return;
+    }
+    const userId = creditGrantMatch[1] ?? "";
+    const apiResponse = await apiFetch(`/admin/users/${encodeURIComponent(userId)}/credits`, request, {
+      method: "POST",
+      headers: { "x-modeldock-csrf-token": cookieValue(request, "modeldock_csrf") ?? "" },
+      body: JSON.stringify({
+        amountUsd: form.get("amountUsd"),
+        reason: form.get("reason")
+      })
+    });
+    redirect(response, apiResponse.ok ? "/" : "/?creditGrant=failed");
     return;
   }
 

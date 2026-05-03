@@ -384,7 +384,7 @@ describe("api scaffold", () => {
     expect(response.body).toMatchObject({ error: "password_confirmation_mismatch" });
   });
 
-  it("allows release-mode admin proxy requests with admin session, csrf, and server token", async () => {
+	  it("allows release-mode admin proxy requests with admin session, csrf, and server token", async () => {
     const handler = createTestHandler({
       accessMode: "release",
       users: [
@@ -419,10 +419,180 @@ describe("api scaffold", () => {
     });
 
     expect(response.status).toBe(200);
-    expect(response.body).toMatchObject({ pending: [] });
+	    expect(response.body).toMatchObject({ pending: [] });
+	  });
+
+  it("returns an admin operations overview without exposing LiteLLM secrets", async () => {
+    const handler = createTestHandler({
+      users: [
+        {
+          id: "owner_1",
+          email: "owner@example.test",
+          role: "owner",
+          status: "active",
+          passwordHash: hashPassword({
+            password: "correct-password",
+            salt: Buffer.alloc(16),
+            iterations: 1
+          })
+        },
+        {
+          id: "user_1",
+          email: "user@example.test",
+          role: "user",
+          status: "active",
+          passwordHash: hashPassword({
+            password: "user-password",
+            salt: Buffer.alloc(16),
+            iterations: 1
+          })
+        }
+      ],
+      litellmGatewayFetch: async (url, init) => {
+        expect(url).toBe("http://litellm.test/health/readiness");
+        expect(init.headers?.authorization).toBe("Bearer test-litellm-master-key");
+        return { ok: true, status: 200 };
+      }
+    });
+    const login = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/login",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "owner@example.test", password: "correct-password" })
+    });
+    const response = await invokeApi(handler, {
+      method: "GET",
+      url: "/admin/overview",
+      headers: {
+        cookie: login.headers["set-cookie"] ?? "",
+        "x-modeldock-admin-proxy": "true",
+        "x-modeldock-admin-token": "admin-secret"
+      }
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      gateway: { configured: true, masterKeyConfigured: true, status: "ready", statusCode: 200 },
+      summary: { activeUsers: 2, pendingApprovals: 0 }
+    });
+    expect(JSON.stringify(response.body)).not.toContain("test-litellm-master-key");
   });
 
-  it("returns experimental local subscription runtime status only to admin proxy sessions", async () => {
+  it("lets admins grant user credits with csrf and records the LiteLLM budget mapping", async () => {
+    const litellmBudgetUpdates: unknown[] = [];
+    const handler = createTestHandler({
+      users: [
+        {
+          id: "owner_1",
+          email: "owner@example.test",
+          role: "owner",
+          status: "active",
+          passwordHash: hashPassword({
+            password: "correct-password",
+            salt: Buffer.alloc(16),
+            iterations: 1
+          })
+        },
+        {
+          id: "user_1",
+          email: "user@example.test",
+          role: "user",
+          status: "active",
+          passwordHash: hashPassword({
+            password: "user-password",
+            salt: Buffer.alloc(16),
+            iterations: 1
+          })
+        }
+      ],
+      litellmAdminFetch: async (url, init) => {
+        expect(url).toBe("http://litellm.test/user/update");
+        expect(init.headers.authorization).toBe("Bearer test-litellm-master-key");
+        litellmBudgetUpdates.push(JSON.parse(init.body ?? "{}"));
+        return {
+          ok: true,
+          status: 200,
+          async json() {
+            return { user_id: "user_1" };
+          }
+        };
+      }
+    });
+    const login = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/login",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "owner@example.test", password: "correct-password" })
+    });
+    const csrfToken = (login.body as { csrfToken: string }).csrfToken;
+    const missingCsrf = await invokeApi(handler, {
+      method: "POST",
+      url: "/admin/users/user_1/credits",
+      headers: {
+        cookie: login.headers["set-cookie"] ?? "",
+        "content-type": "application/json",
+        "x-modeldock-admin-proxy": "true",
+        "x-modeldock-admin-token": "admin-secret"
+      },
+      body: JSON.stringify({ amountUsd: 5 })
+    });
+    expect(missingCsrf.status).toBe(403);
+
+    const ambiguousRoute = await invokeApi(handler, {
+      method: "POST",
+      url: "/admin/users/user_1/extra/credits",
+      headers: {
+        cookie: login.headers["set-cookie"] ?? "",
+        "content-type": "application/json",
+        "x-modeldock-admin-proxy": "true",
+        "x-modeldock-admin-token": "admin-secret",
+        "x-modeldock-csrf-token": csrfToken
+      },
+      body: JSON.stringify({ amountUsd: 5 })
+    });
+    expect(ambiguousRoute.status).toBe(404);
+
+    const grant = await invokeApi(handler, {
+      method: "POST",
+      url: "/admin/users/user_1/credits",
+      headers: {
+        cookie: login.headers["set-cookie"] ?? "",
+        "content-type": "application/json",
+        "x-modeldock-admin-proxy": "true",
+        "x-modeldock-admin-token": "admin-secret",
+        "x-modeldock-csrf-token": csrfToken
+      },
+      body: JSON.stringify({ amountUsd: 5, reason: "welcome_credit" })
+    });
+    expect(grant.status).toBe(200);
+    expect(grant.body).toMatchObject({
+      grant: { amountUsd: 5, balanceUsd: 5, reason: "welcome_credit", source: "grant" },
+      litellmBudget: { maxBudgetUsd: 5, budgetDuration: "30d", syncStatus: "synced" }
+    });
+    expect(litellmBudgetUpdates).toEqual([{ user_id: "user_1", max_budget: 5, budget_duration: "30d" }]);
+
+    const overview = await invokeApi(handler, {
+      method: "GET",
+      url: "/admin/overview",
+      headers: {
+        cookie: login.headers["set-cookie"] ?? "",
+        "x-modeldock-admin-proxy": "true",
+        "x-modeldock-admin-token": "admin-secret"
+      }
+    });
+    expect(overview.body).toMatchObject({
+      summary: { totalCreditBalanceUsd: 5 },
+      users: expect.arrayContaining([
+        expect.objectContaining({
+          id: "user_1",
+          creditBalanceUsd: 5,
+          litellm: expect.objectContaining({ maxBudgetUsd: 5 })
+        })
+      ])
+    });
+  });
+
+	  it("returns experimental local subscription runtime status only to admin proxy sessions", async () => {
     const handler = createTestHandler({
       subscriptionRuntimeConfig: {
         experimentalSubscriptionOAuth: true,
