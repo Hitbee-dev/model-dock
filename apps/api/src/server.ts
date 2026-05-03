@@ -17,6 +17,7 @@ const server = createServer(
   createApiHandler({
     adminAppUrl: process.env.ADMIN_APP_URL ?? "http://127.0.0.1:3001",
     adminApiToken: process.env.ADMIN_API_TOKEN,
+    providerValidationFetch: async (url, init) => fetch(url, init),
     rateLimiter: createMemoryRateLimiter(),
     registrations
   })

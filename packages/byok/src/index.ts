@@ -1,6 +1,14 @@
 export type ProviderKind = "openai" | "anthropic" | "gemini" | "openrouter" | "ollama" | "vllm" | "custom";
 
-export * from "./validation.js";
+export {
+  createProviderValidationPlan,
+  validateProviderConnection
+} from "./validation.js";
+export type {
+  ProviderValidationFetch,
+  ProviderValidationPlan,
+  ProviderValidationRequest
+} from "./validation.js";
 
 export type ProviderCredentialCiphertext = {
   keyId: string;

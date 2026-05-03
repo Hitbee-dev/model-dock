@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { validateProviderConnection, type ProviderKind, type ProviderValidationFetch } from "@modeldock/byok";
 import { isAdminHost, isAuthorizedAdminRequest } from "./security.js";
 import type { RateLimiter } from "./rate-limit.js";
 import type { RegistrationStore } from "./registrations.js";
@@ -6,9 +7,12 @@ import type { RegistrationStore } from "./registrations.js";
 export type ApiHandlerOptions = {
   adminAppUrl: string;
   adminApiToken?: string;
+  providerValidationFetch: ProviderValidationFetch;
   rateLimiter: RateLimiter;
   registrations: RegistrationStore;
 };
+
+const providerKinds = new Set<ProviderKind>(["openai", "anthropic", "gemini", "openrouter", "ollama", "vllm", "custom"]);
 
 async function readBody(request: IncomingMessage): Promise<string> {
   const chunks: Buffer[] = [];
@@ -44,6 +48,14 @@ function clientKey(request: IncomingMessage, action: string): string {
   return `${action}:${request.socket.remoteAddress ?? "unknown"}`;
 }
 
+function parseProvider(value: string | undefined): ProviderKind {
+  if (!value || !providerKinds.has(value as ProviderKind)) {
+    throw new Error("Unsupported provider.");
+  }
+
+  return value as ProviderKind;
+}
+
 export function createApiHandler(options: ApiHandlerOptions) {
   return async (request: IncomingMessage, response: ServerResponse) => {
     try {
@@ -65,6 +77,29 @@ export function createApiHandler(options: ApiHandlerOptions) {
         const body = await readInput(request);
         const registration = await options.registrations.submit({ email: body.email ?? "", displayName: body.displayName });
         sendJson(response, 202, { registrationId: registration.id, status: registration.status });
+        return;
+      }
+
+      if (request.method === "POST" && request.url === "/providers/validate") {
+        const decision = options.rateLimiter.allow(clientKey(request, "provider-validation"), {
+          limit: 10,
+          windowSeconds: 300
+        });
+        if (!decision.allowed) {
+          sendJson(response, 429, { error: "rate_limited", resetAt: decision.resetAt });
+          return;
+        }
+
+        const body = await readInput(request);
+        const result = await validateProviderConnection({
+          fetch: options.providerValidationFetch,
+          request: {
+            provider: parseProvider(body.provider),
+            apiKey: body.apiKey ?? "",
+            endpoint: body.endpoint
+          }
+        });
+        sendJson(response, 200, result);
         return;
       }
 

@@ -40,6 +40,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@modeldock/byok':
+        specifier: workspace:*
+        version: link:../../packages/byok
       pg:
         specifier: ^8.20.0
         version: 8.20.0

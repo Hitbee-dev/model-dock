@@ -23,6 +23,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@modeldock/byok": "workspace:*",
     "pg": "^8.20.0"
   },
   "devDependencies": {
