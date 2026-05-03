@@ -27,6 +27,7 @@
     "@modeldock/byok": "workspace:*",
     "@modeldock/chat": "workspace:*",
     "@modeldock/db": "workspace:*",
+    "@modeldock/rag": "workspace:*",
     "pg": "^8.20.0"
   },
   "devDependencies": {

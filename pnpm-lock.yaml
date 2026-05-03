@@ -52,6 +52,9 @@ importers:
       '@modeldock/db':
         specifier: workspace:*
         version: link:../../packages/db
+      '@modeldock/rag':
+        specifier: workspace:*
+        version: link:../../packages/rag
       pg:
         specifier: ^8.20.0
         version: 8.20.0

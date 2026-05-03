@@ -4,6 +4,7 @@ import { createMemoryAuthStore } from "./auth-store.js";
 import { createApiHandler } from "./http.js";
 import { createPostgresAuthStoreFromEnv } from "./postgres-auth-store.js";
 import { createRegistrationStoreFromEnv } from "./postgres.js";
+import { createMemoryRagDocumentStore, createRagDocumentStoreFromEnv } from "./rag-documents.js";
 import { createMemoryRateLimiter } from "./rate-limit.js";
 import { createMemoryRegistrationStore } from "./registrations.js";
 
@@ -19,6 +20,11 @@ const registrations = await createRegistrationStoreFromEnv({
 const authStore = await createPostgresAuthStoreFromEnv({
   databaseUrl: process.env.DATABASE_URL,
   fallback: createMemoryAuthStore(),
+  nodeEnv: process.env.NODE_ENV
+});
+const ragDocumentStore = await createRagDocumentStoreFromEnv({
+  databaseUrl: process.env.DATABASE_URL,
+  fallback: createMemoryRagDocumentStore(),
   nodeEnv: process.env.NODE_ENV
 });
 
@@ -67,6 +73,7 @@ const server = createServer(
     litellmBaseUrl: process.env.LITELLM_BASE_URL,
     litellmMasterKey: process.env.LITELLM_MASTER_KEY,
     providerValidationFetch: async (url, init) => fetch(url, init),
+    ragDocumentStore,
     rateLimiter: createMemoryRateLimiter(),
     registrations,
     secureCookies: process.env.NODE_ENV === "production",

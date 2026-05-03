@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { hashPassword, hashSessionToken } from "@modeldock/auth";
 import { createPostgresAuthStore } from "./postgres-auth-store.js";
 import { createPostgresRegistrationStore, migrateApiDatabase } from "./postgres.js";
+import { createPostgresRagDocumentStore } from "./rag-documents.js";
 
 class FakeClient {
   statements: string[] = [];
@@ -129,5 +130,57 @@ describe("postgres auth store", () => {
     );
     expect(client.values.flat()).not.toContain("raw-session-token");
     expect(client.statements.at(-1)).toContain("set revoked_at = now()");
+  });
+});
+
+describe("postgres rag document store", () => {
+  it("persists document and chunk metadata without storing document text", async () => {
+    const client = new FakeClient();
+    const store = createPostgresRagDocumentStore(client);
+
+    await store.saveUpload({
+      document: {
+        id: "ragdoc_1",
+        ownerId: "user_1",
+        tenantId: "user_1",
+        sourceUri: "s3://modeldock/rag-documents/user_1/ragdoc_1/policy.txt",
+        objectKey: "rag-documents/user_1/ragdoc_1/policy.txt",
+        objectByteLength: 23,
+        objectChecksumSha256: "checksum",
+        status: "queued",
+        createdAt: "2026-05-03T00:00:00.000Z",
+        chunkCount: 1
+      },
+      ingestPlan: {
+        document: {
+          id: "ragdoc_1",
+          ownerId: "user_1",
+          tenantId: "user_1",
+          sourceUri: "s3://modeldock/rag-documents/user_1/ragdoc_1/policy.txt",
+          status: "queued",
+          textChecksumSha256: "checksum"
+        },
+        chunks: [{ id: "ragdoc_1:0", documentId: "ragdoc_1", ordinal: 0, text: "secret policy text" }],
+        objects: [
+          {
+            id: "ragdoc_1:0",
+            className: "ModelDockChunk",
+            properties: {
+              tenantId: "user_1",
+              documentId: "ragdoc_1",
+              ordinal: 0,
+              text: "secret policy text",
+              textChecksumSha256: "checksum",
+              sourceUri: "s3://modeldock/rag-documents/user_1/ragdoc_1/policy.txt"
+            }
+          }
+        ]
+      },
+      text: "secret policy text"
+    });
+
+    expect(client.statements.join("\n")).toContain("insert into rag_documents");
+    expect(client.statements.join("\n")).toContain("insert into rag_chunks");
+    expect(client.values.flat()).not.toContain("secret policy text");
   });
 });

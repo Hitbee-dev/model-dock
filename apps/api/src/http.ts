@@ -10,6 +10,7 @@ import { validateProviderConnection, type ProviderKind, type ProviderValidationF
 import type { AuthStore } from "./auth-store.js";
 import { streamLiteLLMChat, type ChatCompletionStreamFetch } from "./chat-stream.js";
 import { headerValue, parseCookies, readBody, readInput, sendJson } from "./http-utils.js";
+import { ingestRagDocumentUpload, type RagDocumentStore } from "./rag-documents.js";
 import { authorizeAdminRequest, isAdminHost } from "./security.js";
 import type { AdminGuardOptions } from "./security.js";
 import type { RateLimiter } from "./rate-limit.js";
@@ -21,6 +22,7 @@ export type ApiHandlerOptions = AdminGuardOptions & {
   litellmBaseUrl?: string;
   litellmMasterKey?: string;
   providerValidationFetch: ProviderValidationFetch;
+  ragDocumentStore: RagDocumentStore;
   rateLimiter: RateLimiter;
   registrations: RegistrationStore;
   secureCookies: boolean;
@@ -224,6 +226,31 @@ export function createApiHandler(options: ApiHandlerOptions) {
         }
 
         await streamLiteLLMChat({ config: options, rawBody: await readBody(request), response, userId: session.userId });
+        return;
+      }
+
+      if (request.method === "POST" && request.url === "/rag/documents") {
+        const session = await getCurrentSession(request, options);
+        if (!session) {
+          sendJson(response, 401, { error: "not_authenticated" });
+          return;
+        }
+
+        const decision = options.rateLimiter.allow(clientKey(request, "rag-upload"), {
+          limit: 10,
+          windowSeconds: 300
+        });
+        if (!decision.allowed) {
+          sendJson(response, 429, { error: "rate_limited", resetAt: decision.resetAt });
+          return;
+        }
+
+        const result = await ingestRagDocumentUpload({
+          authenticatedUserId: session.userId,
+          body: (await readInput(request)) as Record<string, unknown>,
+          store: options.ragDocumentStore
+        });
+        sendJson(response, 202, result);
         return;
       }
 

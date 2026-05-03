@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { hashPassword } from "@modeldock/auth";
 import { createMemoryRegistrationStore } from "./registrations.js";
+import { createMemoryRagDocumentStore } from "./rag-documents.js";
 import { authorizeAdminRequest, isAuthorizedAdminRequest } from "./security.js";
 import { createTestHandler, invokeApi } from "./test-helpers.js";
 
@@ -235,6 +236,56 @@ describe("api scaffold", () => {
     });
 
     expect(logout.status).toBe(403);
+  });
+
+  it("queues authenticated RAG document uploads without returning document text", async () => {
+    const ragDocumentStore = createMemoryRagDocumentStore();
+    const handler = createTestHandler({
+      ragDocumentStore,
+      users: [
+        {
+          id: "user_1",
+          email: "user@example.com",
+          role: "user",
+          status: "active",
+          passwordHash: hashPassword({
+            password: "correct-password",
+            salt: Buffer.alloc(16),
+            iterations: 1
+          })
+        }
+      ]
+    });
+    const login = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/login",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "user@example.com", password: "correct-password" })
+    });
+    const upload = await invokeApi(handler, {
+      method: "POST",
+      url: "/rag/documents",
+      headers: { cookie: login.headers["set-cookie"] ?? "", "content-type": "application/json" },
+      body: JSON.stringify({ filename: "policy.txt", text: "Team budget policy text." })
+    });
+
+    expect(upload.status).toBe(202);
+    expect(upload.body).toMatchObject({ status: "queued", chunkCount: 1 });
+    expect(JSON.stringify(upload.body)).not.toContain("Team budget policy text");
+    expect(ragDocumentStore.uploads[0]?.document.ownerId).toBe("user_1");
+    expect(ragDocumentStore.uploads[0]?.document.objectKey).toContain("/user_1/");
+  });
+
+  it("rejects unauthenticated RAG document uploads", async () => {
+    const handler = createTestHandler();
+    const upload = await invokeApi(handler, {
+      method: "POST",
+      url: "/rag/documents",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ filename: "policy.txt", text: "Team budget policy text." })
+    });
+
+    expect(upload.status).toBe(401);
   });
 
 });
