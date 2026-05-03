@@ -26,7 +26,7 @@
 - [x] Add session token, CSRF token, and secure cookie helper contracts.
 - [x] Wire auth rate limits into concrete login endpoint.
 - [x] Persist sessions outside in-memory API process storage.
-- [ ] Implement first-owner password setup and `modeldock create-owner`.
+- [x] Implement first-owner password setup and `modeldock create-owner`.
 - [x] Enforce admin-host checks in API scaffold.
 - [x] Add persistent PostgreSQL-backed signup approval storage.
 - [x] Add public signup rate limiting scaffold.

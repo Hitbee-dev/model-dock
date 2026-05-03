@@ -59,7 +59,21 @@ importers:
 
   apps/web: {}
 
-  cli: {}
+  cli:
+    dependencies:
+      '@modeldock/auth':
+        specifier: workspace:*
+        version: link:../packages/auth
+      '@modeldock/db':
+        specifier: workspace:*
+        version: link:../packages/db
+      pg:
+        specifier: ^8.20.0
+        version: 8.20.0
+    devDependencies:
+      '@types/pg':
+        specifier: ^8.20.0
+        version: 8.20.0
 
   packages/auth: {}
 
