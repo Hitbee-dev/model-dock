@@ -3,7 +3,7 @@
 # ModelDock
 
 [![npm version](https://img.shields.io/npm/v/modeldock?color=cb3837)](https://www.npmjs.com/package/modeldock)
-[![CLI package](https://img.shields.io/npm/v/@modeldock/cli?label=%40modeldock%2Fcli&color=cb3837)](https://www.npmjs.com/package/@modeldock/cli)
+[![CLI package](https://img.shields.io/npm/v/@modeldock/cli?label=%40modeldock%2Fcli)](https://www.npmjs.com/package/@modeldock/cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 ModelDock 是基于 LiteLLM 的开源控制平面，用于自托管的多用户 LLM 应用。

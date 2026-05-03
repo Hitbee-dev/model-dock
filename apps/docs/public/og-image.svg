@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">ModelDock</title>
+  <desc id="desc">Operator-grade control plane for self-hosted multi-user LLM apps.</desc>
+  <rect width="1200" height="630" fill="#0d1117"/>
+  <rect x="80" y="82" width="1040" height="466" rx="28" fill="#f6f8fa"/>
+  <path d="M160 358h880" stroke="#8b949e" stroke-width="10" stroke-linecap="round"/>
+  <path d="M270 258h140l54 100H216z" fill="#0969da"/>
+  <path d="M494 258h140l54 100H440z" fill="#2da44e"/>
+  <path d="M718 258h140l54 100H664z" fill="#bf8700"/>
+  <circle cx="270" cy="386" r="28" fill="#0d1117"/>
+  <circle cx="410" cy="386" r="28" fill="#0d1117"/>
+  <circle cx="494" cy="386" r="28" fill="#0d1117"/>
+  <circle cx="634" cy="386" r="28" fill="#0d1117"/>
+  <circle cx="718" cy="386" r="28" fill="#0d1117"/>
+  <circle cx="858" cy="386" r="28" fill="#0d1117"/>
+  <text x="160" y="180" font-family="Inter, Arial, sans-serif" font-size="72" font-weight="700" fill="#0d1117">ModelDock</text>
+  <text x="160" y="468" font-family="Inter, Arial, sans-serif" font-size="34" fill="#24292f">LiteLLM-first control plane for private LLM services</text>
+</svg>

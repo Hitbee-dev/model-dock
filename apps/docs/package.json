@@ -1,0 +1,13 @@
+{
+  "name": "@modeldock/docs",
+  "version": "0.0.0",
+  "description": "ModelDock rendered documentation site.",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "node src/build.mjs",
+    "typecheck": "node src/build.mjs --check",
+    "test": "node src/build.mjs --check"
+  }
+}

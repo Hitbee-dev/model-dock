@@ -1,0 +1,12 @@
+# ModelDock public docs robots.txt
+# Crawlable docs only. Authentication, authorization, and origin controls protect private surfaces.
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /internal/
+Disallow: /private/
+
+Sitemap: https://modeldock.example.com/sitemap.xml
