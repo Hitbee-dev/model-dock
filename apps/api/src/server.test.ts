@@ -1,4 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { hashPassword } from "@modeldock/auth";
+import { createMemoryAuthStore, type AuthUser } from "./auth-store.js";
 import { createApiHandler } from "./http.js";
 import { createMemoryRateLimiter } from "./rate-limit.js";
 import { createMemoryRegistrationStore } from "./registrations.js";
@@ -7,9 +9,10 @@ import { isAuthorizedAdminRequest } from "./security.js";
 async function invokeApi(
   handler: ReturnType<typeof createApiHandler>,
   input: { method: string; url: string; headers?: Record<string, string>; body?: string; remoteAddress?: string }
-): Promise<{ status: number; body: unknown }> {
+): Promise<{ status: number; body: unknown; headers: Record<string, string> }> {
   let status = 0;
   let rawBody = "";
+  let responseHeaders: Record<string, string> = {};
   const request = {
     method: input.method,
     url: input.url,
@@ -22,8 +25,9 @@ async function invokeApi(
     }
   };
   const response = {
-    writeHead(nextStatus: number) {
+    writeHead(nextStatus: number, headers: Record<string, string>) {
       status = nextStatus;
+      responseHeaders = headers;
     },
     end(body: string) {
       rawBody = body;
@@ -31,7 +35,21 @@ async function invokeApi(
   };
 
   await handler(request as never, response as never);
-  return { status, body: JSON.parse(rawBody) as unknown };
+  return { status, body: JSON.parse(rawBody) as unknown, headers: responseHeaders };
+}
+
+function createTestHandler(input: { users?: AuthUser[]; sessionSecret?: string } = {}) {
+  return createApiHandler({
+    adminAppUrl: "http://127.0.0.1:3001",
+    adminApiToken: "admin-secret",
+    authStore: createMemoryAuthStore(input.users),
+    providerValidationFetch: async () => ({ status: 200 }),
+    rateLimiter: createMemoryRateLimiter(),
+    registrations: createMemoryRegistrationStore(),
+    secureCookies: false,
+    sessionSecret: input.sessionSecret ?? "test-session-secret-that-is-at-least-32-bytes",
+    sessionTtlSeconds: 3600
+  });
 }
 
 describe("api scaffold", () => {
@@ -74,12 +92,16 @@ describe("api scaffold", () => {
     const handler = createApiHandler({
       adminAppUrl: "http://127.0.0.1:3001",
       adminApiToken: "admin-secret",
+      authStore: createMemoryAuthStore(),
       providerValidationFetch: async (url, init) => {
         upstreamCalls.push({ url, authorization: init.headers.authorization });
         return { status: 200 };
       },
       rateLimiter: createMemoryRateLimiter(),
-      registrations: createMemoryRegistrationStore()
+      registrations: createMemoryRegistrationStore(),
+      secureCookies: false,
+      sessionSecret: "test-session-secret-that-is-at-least-32-bytes",
+      sessionTtlSeconds: 3600
     });
 
     const response = await invokeApi(handler, {
@@ -104,9 +126,13 @@ describe("api scaffold", () => {
   it("rate-limits provider validation requests", async () => {
     const handler = createApiHandler({
       adminAppUrl: "http://127.0.0.1:3001",
+      authStore: createMemoryAuthStore(),
       providerValidationFetch: async () => ({ status: 200 }),
       rateLimiter: createMemoryRateLimiter(),
-      registrations: createMemoryRegistrationStore()
+      registrations: createMemoryRegistrationStore(),
+      secureCookies: false,
+      sessionSecret: "test-session-secret-that-is-at-least-32-bytes",
+      sessionTtlSeconds: 3600
     });
 
     for (let index = 0; index < 10; index += 1) {
@@ -127,5 +153,107 @@ describe("api scaffold", () => {
     });
 
     expect(blocked.status).toBe(429);
+  });
+
+  it("issues session and csrf tokens for valid local login", async () => {
+    const handler = createTestHandler({
+      users: [
+        {
+          id: "user_1",
+          email: "user@example.com",
+          role: "user",
+          status: "active",
+          passwordHash: hashPassword({
+            password: "correct-password",
+            salt: Buffer.alloc(16),
+            iterations: 1
+          })
+        }
+      ]
+    });
+
+    const login = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/login",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "USER@example.com", password: "correct-password" })
+    });
+
+    expect(login.status).toBe(200);
+    expect(login.headers["set-cookie"]).toContain("HttpOnly");
+    expect(JSON.stringify(login.body)).not.toContain("correct-password");
+
+    const body = login.body as { csrfToken: string };
+    const session = await invokeApi(handler, {
+      method: "GET",
+      url: "/auth/session",
+      headers: { cookie: login.headers["set-cookie"] ?? "" }
+    });
+
+    expect(session.status).toBe(200);
+    expect(session.body).toMatchObject({ user: { id: "user_1", email: "user@example.com", role: "user" } });
+
+    const logout = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/logout",
+      headers: { cookie: login.headers["set-cookie"] ?? "", "x-modeldock-csrf-token": body.csrfToken }
+    });
+
+    expect(logout.status).toBe(200);
+  });
+
+  it("rate-limits invalid local login attempts", async () => {
+    const handler = createTestHandler();
+
+    for (let index = 0; index < 5; index += 1) {
+      const response = await invokeApi(handler, {
+        method: "POST",
+        url: "/auth/login",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: "missing@example.com", password: "wrong-password" })
+      });
+      expect(response.status).toBe(401);
+    }
+
+    const blocked = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/login",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "missing@example.com", password: "wrong-password" })
+    });
+
+    expect(blocked.status).toBe(429);
+  });
+
+  it("requires csrf for logout", async () => {
+    const handler = createTestHandler({
+      users: [
+        {
+          id: "user_1",
+          email: "user@example.com",
+          role: "user",
+          status: "active",
+          passwordHash: hashPassword({
+            password: "correct-password",
+            salt: Buffer.alloc(16),
+            iterations: 1
+          })
+        }
+      ]
+    });
+    const login = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/login",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "user@example.com", password: "correct-password" })
+    });
+
+    const logout = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/logout",
+      headers: { cookie: login.headers["set-cookie"] ?? "" }
+    });
+
+    expect(logout.status).toBe(403);
   });
 });

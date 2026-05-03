@@ -40,6 +40,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@modeldock/auth':
+        specifier: workspace:*
+        version: link:../../packages/auth
       '@modeldock/byok':
         specifier: workspace:*
         version: link:../../packages/byok

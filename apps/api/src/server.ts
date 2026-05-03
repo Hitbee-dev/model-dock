@@ -1,4 +1,5 @@
 import { createServer } from "node:http";
+import { createMemoryAuthStore } from "./auth-store.js";
 import { createApiHandler } from "./http.js";
 import { createRegistrationStoreFromEnv } from "./postgres.js";
 import { createMemoryRateLimiter } from "./rate-limit.js";
@@ -17,9 +18,13 @@ const server = createServer(
   createApiHandler({
     adminAppUrl: process.env.ADMIN_APP_URL ?? "http://127.0.0.1:3001",
     adminApiToken: process.env.ADMIN_API_TOKEN,
+    authStore: createMemoryAuthStore(),
     providerValidationFetch: async (url, init) => fetch(url, init),
     rateLimiter: createMemoryRateLimiter(),
-    registrations
+    registrations,
+    secureCookies: process.env.NODE_ENV === "production",
+    sessionSecret: process.env.SESSION_SECRET,
+    sessionTtlSeconds: Number(process.env.SESSION_TTL_SECONDS ?? 60 * 60 * 24 * 7)
   })
 );
 
