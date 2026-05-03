@@ -1,4 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import type { SubscriptionRuntimeProbe } from "@modeldock/byok";
 import { resolveLocaleFromHeaders } from "@modeldock/ui";
 import { createAdminAccessGate } from "./access.js";
 import {
@@ -8,12 +9,13 @@ import {
   renderInvitationPage,
   renderLoginPage,
   renderSetupAccountPage,
+  renderSubscriptionRuntimesPage,
   type PendingApproval
 } from "./pages.js";
 
 const port = Number(process.env.PORT ?? 3001);
 const host = process.env.HOST ?? "127.0.0.1";
-const apiUrl = process.env.PUBLIC_API_URL ?? "http://127.0.0.1:3002";
+const apiUrl = process.env.SERVER_API_URL ?? process.env.PUBLIC_API_URL ?? "http://127.0.0.1:3002";
 const publicAppUrl = process.env.PUBLIC_APP_URL ?? "http://127.0.0.1:3000";
 const accessMode = process.env.MODELDOCK_ACCESS_MODE === "release" ? "release" : "debug";
 const adminApiToken = process.env.ADMIN_API_TOKEN;
@@ -66,12 +68,16 @@ async function apiFetch(path: string, request: IncomingMessage, init: RequestIni
 }
 
 async function requireAdminSession(request: IncomingMessage): Promise<boolean> {
-  const apiResponse = await apiFetch("/auth/session", request);
-  if (!apiResponse.ok) {
+  try {
+    const apiResponse = await apiFetch("/auth/session", request);
+    if (!apiResponse.ok) {
+      return false;
+    }
+    const body = (await apiResponse.json()) as { user?: { role?: string } };
+    return body.user?.role === "owner" || body.user?.role === "admin";
+  } catch {
     return false;
   }
-  const body = (await apiResponse.json()) as { user?: { role?: string } };
-  return body.user?.role === "owner" || body.user?.role === "admin";
 }
 
 function renderLoginRequired(request: IncomingMessage, response: ServerResponse) {
@@ -87,17 +93,16 @@ function hasValidFormCsrf(request: IncomingMessage, form: URLSearchParams): bool
 
 async function renderHome(request: IncomingMessage, response: ServerResponse) {
   const locale = resolveLocaleFromHeaders(request.headers);
-  const approvalsResponse = await apiFetch("/admin/approvals", request);
-  const approvals = approvalsResponse.ok
-    ? ((await approvalsResponse.json()) as { pending: PendingApproval[] }).pending
-    : [];
+  const approvalsResponse = await apiFetch("/admin/approvals", request).catch(() => undefined);
+  const approvals =
+    approvalsResponse?.ok ? ((await approvalsResponse.json()) as { pending: PendingApproval[] }).pending : [];
   response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
   response.end(
     renderApprovalsPage({
       approvals,
       csrfToken: cookieValue(request, "modeldock_csrf"),
       locale,
-      needsLogin: approvalsResponse.status === 403
+      needsLogin: !approvalsResponse || approvalsResponse.status === 403
     })
   );
 }
@@ -190,6 +195,26 @@ const server = createServer(async (request, response) => {
         csrfToken: cookieValue(request, "modeldock_csrf"),
         snapshot: accessGate.snapshot(),
         locale
+      })
+    );
+    return;
+  }
+
+  if (request.method === "GET" && request.url === "/subscription-runtimes") {
+    if (!(await requireAdminSession(request))) {
+      renderLoginRequired(request, response);
+      return;
+    }
+    const runtimeResponse = await apiFetch("/experimental/subscription-runtimes", request).catch(() => undefined);
+    const body = runtimeResponse?.ok
+      ? ((await runtimeResponse.json()) as { runtimes: SubscriptionRuntimeProbe[]; warning?: string })
+      : { runtimes: [], warning: "runtime_status_unavailable" };
+    response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    response.end(
+      renderSubscriptionRuntimesPage({
+        locale,
+        runtimes: body.runtimes,
+        warning: body.warning
       })
     );
     return;

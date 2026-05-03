@@ -95,6 +95,7 @@ Release mode は実ドメイン接続用です。`admin/admin` は作成され�
 | RAG | Weaviate、Redis、PostgreSQL、S3 互換ストレージ |
 | MCP とスキル | ユーザー別設定、権限プロンプト、監査メタデータ |
 | 管理アプリ | 別ホスト保護と role-based access control |
+| 実験的ローカルランタイム | Codex CLI / Claude Code CLI のログイン状態確認、トークンは保存しない |
 
 ## ドキュメント
 
@@ -107,6 +108,7 @@ Release mode は実ドメイン接続用です。`admin/admin` は作成され�
 - [LiteLLM 連携](docs/litellm.md)
 - [セキュリティモデル](docs/security.md)
 - [BYOK](docs/byok.md)
+- [実験的ローカルサブスクリプションランタイム](docs/experimental-subscription-runtimes.md)
 - [プロバイダー文書](docs/providers/README.md)
 
 ## ライセンス

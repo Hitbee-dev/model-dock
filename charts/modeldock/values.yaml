@@ -91,6 +91,8 @@ config:
   experimentalSubscriptionOauth: "false"
   experimentalChatgptSubscription: "false"
   experimentalClaudeSubscription: "false"
+  modeldockCodexCommand: codex
+  modeldockClaudeCommand: claude
   cloudflareAccessEnabled: "false"
   cloudflareAccessTeamDomain: team.cloudflareaccess.com
   cloudflareAccessAllowedAudiences: replace-with-cloudflare-access-audience

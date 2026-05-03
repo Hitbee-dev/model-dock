@@ -95,6 +95,7 @@ Trang chọn ngôn ngữ theo Cloudflare `CF-IPCountry`, sau đó `Accept-Langua
 | RAG | Weaviate, Redis, PostgreSQL và lưu trữ tương thích S3 |
 | MCP và skill | Cấu hình theo người dùng, prompt quyền, metadata audit |
 | Admin app | Host riêng được bảo vệ và kiểm soát theo role |
+| Runtime cục bộ thử nghiệm | Kiểm tra đăng nhập Codex CLI / Claude Code CLI, không lưu token |
 
 ## Tài liệu
 
@@ -107,6 +108,7 @@ Trang chọn ngôn ngữ theo Cloudflare `CF-IPCountry`, sau đó `Accept-Langua
 - [Tích hợp LiteLLM](docs/litellm.md)
 - [Mô hình bảo mật](docs/security.md)
 - [BYOK](docs/byok.md)
+- [Runtime subscription cục bộ thử nghiệm](docs/experimental-subscription-runtimes.md)
 - [Tài liệu provider](docs/providers/README.md)
 
 ## Giấy phép

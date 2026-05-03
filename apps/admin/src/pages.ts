@@ -5,6 +5,7 @@ import {
   renderShell,
   type SupportedLocale
 } from "@modeldock/ui";
+import type { SubscriptionRuntimeProbe } from "@modeldock/byok";
 import type { AccessRuleSnapshot } from "./access.js";
 
 export type PendingApproval = {
@@ -22,6 +23,8 @@ type AdminCopy = {
   setupBody: string;
   approvalsTitle: string;
   approvalsBody: string;
+  runtimesTitle: string;
+  runtimesBody: string;
   settingsTitle: string;
   settingsBody: string;
 };
@@ -35,6 +38,8 @@ const copy: Record<SupportedLocale, AdminCopy> = {
     setupBody: "Use a real email or operator ID and a password of at least 12 characters.",
     approvalsTitle: "Review signup requests.",
     approvalsBody: "Users can sign in only after an administrator approves their registration.",
+    runtimesTitle: "Experimental local subscription runtimes.",
+    runtimesBody: "Check host CLI login state without storing OAuth tokens in ModelDock.",
     settingsTitle: "Admin access allowlist.",
     settingsBody: "Access is allowed when either the request IP or registered device fingerprint matches."
   },
@@ -46,6 +51,8 @@ const copy: Record<SupportedLocale, AdminCopy> = {
     setupBody: "실제 이메일 또는 운영자 ID와 12자 이상의 비밀번호를 사용하세요.",
     approvalsTitle: "회원가입 요청을 검토하세요.",
     approvalsBody: "사용자는 관리자가 가입 요청을 승인한 뒤에만 로그인할 수 있습니다.",
+    runtimesTitle: "실험적 로컬 구독 런타임.",
+    runtimesBody: "ModelDock에 OAuth 토큰을 저장하지 않고 호스트 CLI 로그인 상태만 확인합니다.",
     settingsTitle: "관리자 접근 허용 목록.",
     settingsBody: "요청 IP 또는 등록된 디바이스 fingerprint 중 하나가 맞으면 접근을 허용합니다."
   },
@@ -57,6 +64,8 @@ const copy: Record<SupportedLocale, AdminCopy> = {
     setupBody: "使用真实邮箱或操作员 ID，以及至少 12 个字符的密码。",
     approvalsTitle: "审核注册请求。",
     approvalsBody: "只有管理员批准后，用户才能登录。",
+    runtimesTitle: "实验性本地订阅运行时。",
+    runtimesBody: "只检查主机 CLI 登录状态，不在 ModelDock 中存储 OAuth 令牌。",
     settingsTitle: "管理员访问白名单。",
     settingsBody: "请求 IP 或已登记设备 fingerprint 任一匹配即可访问。"
   },
@@ -68,6 +77,8 @@ const copy: Record<SupportedLocale, AdminCopy> = {
     setupBody: "実際のメールまたは運用 ID と 12 文字以上のパスワードを使ってください。",
     approvalsTitle: "登録リクエストを確認します。",
     approvalsBody: "ユーザーは管理者が承認した後にのみサインインできます。",
+    runtimesTitle: "実験的なローカル subscription runtime。",
+    runtimesBody: "ModelDock に OAuth トークンを保存せず、ホスト CLI のログイン状態だけ確認します。",
     settingsTitle: "管理者アクセス許可リスト。",
     settingsBody: "リクエスト IP または登録済み device fingerprint の片方が一致すれば許可します。"
   },
@@ -79,6 +90,8 @@ const copy: Record<SupportedLocale, AdminCopy> = {
     setupBody: "Usa un correo o ID real y una contrasena de al menos 12 caracteres.",
     approvalsTitle: "Revisa solicitudes de registro.",
     approvalsBody: "Los usuarios solo entran despues de la aprobacion administrativa.",
+    runtimesTitle: "Runtimes locales experimentales.",
+    runtimesBody: "Comprueba el login del CLI sin guardar tokens OAuth en ModelDock.",
     settingsTitle: "Lista permitida de administracion.",
     settingsBody: "Se permite el acceso si coincide la IP o el fingerprint registrado."
   },
@@ -90,6 +103,8 @@ const copy: Record<SupportedLocale, AdminCopy> = {
     setupBody: "Dung email hoac ID that va mat khau it nhat 12 ky tu.",
     approvalsTitle: "Duyet yeu cau dang ky.",
     approvalsBody: "Nguoi dung chi dang nhap duoc sau khi quan tri vien phe duyet.",
+    runtimesTitle: "Runtime local thu nghiem.",
+    runtimesBody: "Kiem tra dang nhap CLI may chu ma khong luu token OAuth trong ModelDock.",
     settingsTitle: "Danh sach cho phep quan tri.",
     settingsBody: "Cho phep khi IP hoac fingerprint da dang ky khop."
   },
@@ -101,6 +116,8 @@ const copy: Record<SupportedLocale, AdminCopy> = {
     setupBody: "Use email ou ID real e senha com pelo menos 12 caracteres.",
     approvalsTitle: "Revise solicitacoes de cadastro.",
     approvalsBody: "Usuarios so entram depois da aprovacao administrativa.",
+    runtimesTitle: "Runtimes locais experimentais.",
+    runtimesBody: "Verifica o login do CLI sem salvar tokens OAuth no ModelDock.",
     settingsTitle: "Lista permitida administrativa.",
     settingsBody: "O acesso e permitido se o IP ou fingerprint registrado corresponder."
   }
@@ -267,6 +284,49 @@ export function renderAccessSettingsPage(input: {
       <p>IPs: ${escapeHtml(input.snapshot.detectedIps.join(", ") || "none")}</p>
       <p>MACs: ${escapeHtml(input.snapshot.detectedMacs.join(", ") || "none")}</p>
     </div>
+  </section>
+</main>`
+  });
+}
+
+export function renderSubscriptionRuntimesPage(input: {
+  locale?: SupportedLocale;
+  needsLogin?: boolean;
+  runtimes: SubscriptionRuntimeProbe[];
+  warning?: string;
+}): string {
+  const locale = input.locale ?? "en";
+  const t = text(locale);
+  const rows = input.runtimes.length
+    ? input.runtimes
+        .map(
+          (runtime) => `<div class="chat-item">
+        <strong>${escapeHtml(runtime.displayName)}</strong>
+        <p>${escapeHtml(runtime.status)} · ${escapeHtml(runtime.message)}</p>
+        <p>Command: <code>${escapeHtml(runtime.command)}</code> · Login: <code>${escapeHtml(runtime.loginHint)}</code></p>
+        <p>${escapeHtml(runtime.termsWarning)}</p>
+      </div>`
+        )
+        .join("")
+    : `<p>${input.warning ? escapeHtml(input.warning) : "No local runtimes configured."}</p>`;
+
+  return renderShell({
+    title: "ModelDock subscription runtimes",
+    surface: "admin",
+    activePath: "/subscription-runtimes",
+    locale,
+    body: `<main class="page">
+  <section class="hero">
+    <div>
+      <p class="eyebrow">Experimental</p>
+      <h1>${escapeHtml(t.runtimesTitle)}</h1>
+      <p>${escapeHtml(t.runtimesBody)}</p>
+      <p class="notice">Do not use this to share one personal subscription across multiple users unless the provider explicitly allows it.</p>
+    </div>
+    <section class="form-panel">
+      <h2>Runtime status</h2>
+      ${input.needsLogin ? `<p class="notice">Sign in to inspect local runtimes.</p>` : rows}
+    </section>
   </section>
 </main>`
   });

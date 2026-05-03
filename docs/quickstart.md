@@ -47,6 +47,12 @@ LiteLLM and Postgres are internal-only by default.
 Users request access from the user app. Requests remain pending until an owner
 or admin approves them from the admin app.
 
+## Experimental runtime checks
+
+Open `http://127.0.0.1:3001/subscription-runtimes` to inspect local Codex CLI
+or Claude Code CLI login state. This is disabled by default, marked
+experimental, and does not store OAuth tokens in ModelDock.
+
 ## Security caveats
 
 Do not use placeholder secrets in production. Admin is a separate service and
@@ -57,6 +63,7 @@ Use release mode for any domain-connected deployment.
 
 - [Docker deployment](deployment/docker.md)
 - [Debug and release modes](deployment/modes.md)
+- [Experimental local subscription runtimes](experimental-subscription-runtimes.md)
 - [Administrator guide](admin-guide.md)
 - [User guide](user-guide.md)
 - [Production Docker](deployment/production-docker.md)

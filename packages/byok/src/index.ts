@@ -9,6 +9,19 @@ export type {
   ProviderValidationPlan,
   ProviderValidationRequest
 } from "./validation.js";
+export {
+  createSubscriptionRuntimeDefinitions,
+  probeConfiguredSubscriptionRuntimes,
+  probeSubscriptionRuntime
+} from "./subscription-runtimes.js";
+export type {
+  SubscriptionRuntimeCommandRunner,
+  SubscriptionRuntimeConfig,
+  SubscriptionRuntimeDefinition,
+  SubscriptionRuntimeId,
+  SubscriptionRuntimeProbe,
+  SubscriptionRuntimeStatus
+} from "./subscription-runtimes.js";
 
 export type ProviderCredentialCiphertext = {
   keyId: string;

@@ -358,6 +358,63 @@ describe("api scaffold", () => {
     expect(response.body).toMatchObject({ pending: [] });
   });
 
+  it("returns experimental local subscription runtime status only to admin proxy sessions", async () => {
+    const handler = createTestHandler({
+      subscriptionRuntimeConfig: {
+        experimentalSubscriptionOAuth: true,
+        experimentalChatGPTSubscription: true,
+        experimentalClaudeSubscription: false
+      },
+      subscriptionRuntimeRunner: async () => ({
+        exitCode: 0,
+        stdout: "Logged in using ChatGPT",
+        stderr: ""
+      }),
+      users: [
+        {
+          id: "owner_1",
+          email: "owner@example.test",
+          role: "owner",
+          status: "active",
+          passwordHash: hashPassword({
+            password: "correct-password",
+            salt: Buffer.alloc(16),
+            iterations: 1
+          })
+        }
+      ]
+    });
+    const blocked = await invokeApi(handler, {
+      method: "GET",
+      url: "/experimental/subscription-runtimes"
+    });
+    expect(blocked.status).toBe(403);
+
+    const login = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/login",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "owner@example.test", password: "correct-password" })
+    });
+    const response = await invokeApi(handler, {
+      method: "GET",
+      url: "/experimental/subscription-runtimes",
+      headers: {
+        cookie: login.headers["set-cookie"] ?? "",
+        "x-modeldock-admin-proxy": "true",
+        "x-modeldock-admin-token": "admin-secret"
+      }
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      runtimes: [
+        { id: "codex_local", status: "ready" },
+        { id: "claude_local", status: "disabled" }
+      ]
+    });
+  });
+
   it("turns approved signup requests into credential setup invitations", async () => {
     const registrations = createMemoryRegistrationStore();
     const authStore = createMemoryAuthStore([

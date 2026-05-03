@@ -192,8 +192,13 @@ Vietnamese, and Portuguese.
 | Ollama | Local endpoint through LiteLLM | Planned |
 | vLLM | OpenAI-compatible endpoint | Planned |
 | Custom endpoint | OpenAI-compatible base URL and key | Planned |
-| ChatGPT subscription OAuth | Experimental, per-user only, disabled by default | Not MVP |
-| Claude subscription OAuth | Experimental, per-user only, disabled by default | Not MVP |
+| Codex CLI local runtime | Experimental local CLI login probe, disabled by default | Scaffolded |
+| Claude Code local runtime | Experimental local CLI login probe, disabled by default | Scaffolded |
+
+Experimental local runtimes follow a local adapter pattern: ModelDock checks
+whether the host CLI is installed and authenticated, but does not store OAuth
+tokens. Admins can inspect status from `/subscription-runtimes`. See
+[docs/experimental-subscription-runtimes.md](docs/experimental-subscription-runtimes.md).
 
 ## BYOK and user-owned credentials
 

@@ -10,6 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@modeldock/byok": "workspace:*",
     "@modeldock/ui": "workspace:*"
   },
   "devDependencies": {}

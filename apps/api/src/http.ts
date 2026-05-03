@@ -9,7 +9,14 @@ import {
   verifyTokenHash,
   type PasswordHash
 } from "@modeldock/auth";
-import { validateProviderConnection, type ProviderKind, type ProviderValidationFetch } from "@modeldock/byok";
+import {
+  probeConfiguredSubscriptionRuntimes,
+  validateProviderConnection,
+  type ProviderKind,
+  type ProviderValidationFetch,
+  type SubscriptionRuntimeCommandRunner,
+  type SubscriptionRuntimeConfig
+} from "@modeldock/byok";
 import type { AuthStore } from "./auth-store.js";
 import { streamLiteLLMChat, type ChatCompletionStreamFetch, type ChatRagRetriever } from "./chat-stream.js";
 import { headerValue, parseCookies, readBody, readInput, sendJson } from "./http-utils.js";
@@ -40,6 +47,8 @@ export type ApiHandlerOptions = AdminGuardOptions & {
   secureCookies: boolean;
   sessionSecret?: string;
   sessionTtlSeconds: number;
+  subscriptionRuntimeConfig?: SubscriptionRuntimeConfig;
+  subscriptionRuntimeRunner?: SubscriptionRuntimeCommandRunner;
 };
 
 const providerKinds = new Set<ProviderKind>(["openai", "anthropic", "gemini", "openrouter", "ollama", "vllm", "custom"]);
@@ -304,6 +313,24 @@ export function createApiHandler(options: ApiHandlerOptions) {
           }
         });
         sendJson(response, 200, result);
+        return;
+      }
+
+      if (request.method === "GET" && request.url === "/experimental/subscription-runtimes") {
+        if (!(await authorizeAdminRequest(request, options)) || !(await getAdminSession(request, options))) {
+          sendJson(response, 403, { error: "admin_runtime_status_requires_admin_host_and_token" });
+          return;
+        }
+        if (!options.subscriptionRuntimeRunner) {
+          sendJson(response, 200, { runtimes: [], warning: "subscription_runtime_probe_not_configured" });
+          return;
+        }
+        sendJson(response, 200, {
+          runtimes: await probeConfiguredSubscriptionRuntimes(
+            options.subscriptionRuntimeConfig ?? {},
+            options.subscriptionRuntimeRunner
+          )
+        });
         return;
       }
 

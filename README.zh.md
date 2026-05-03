@@ -95,6 +95,7 @@ Release 模式用于真实域名部署。它不会创建 `admin/admin`，空的�
 | RAG | 基于 Weaviate、Redis、PostgreSQL 和 S3 兼容存储 |
 | MCP 和技能 | 用户级配置、权限提示、审计元数据 |
 | 管理应用 | 独立受保护主机和基于角色的访问控制 |
+| 实验性本地运行时 | 检查 Codex CLI / Claude Code CLI 登录状态，不存储 token |
 
 ## 文档
 
@@ -107,6 +108,7 @@ Release 模式用于真实域名部署。它不会创建 `admin/admin`，空的�
 - [LiteLLM 集成](docs/litellm.md)
 - [安全模型](docs/security.md)
 - [BYOK](docs/byok.md)
+- [实验性本地订阅运行时](docs/experimental-subscription-runtimes.md)
 - [提供商文档](docs/providers/README.md)
 
 ## 许可证

@@ -38,6 +38,9 @@ importers:
 
   apps/admin:
     dependencies:
+      '@modeldock/byok':
+        specifier: workspace:*
+        version: link:../../packages/byok
       '@modeldock/ui':
         specifier: workspace:*
         version: link:../../packages/ui

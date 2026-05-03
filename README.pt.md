@@ -95,6 +95,7 @@ As páginas resolvem idioma por Cloudflare `CF-IPCountry`, depois `Accept-Langua
 | RAG | Weaviate, Redis, PostgreSQL e armazenamento compatível com S3 |
 | MCP e skills | Configuração por usuário, prompt de permissão e auditoria |
 | Admin app | Host protegido separado e controle por papéis |
+| Runtimes locais experimentais | Verificação de login do Codex CLI / Claude Code CLI sem armazenar tokens |
 
 ## Documentação
 
@@ -107,6 +108,7 @@ As páginas resolvem idioma por Cloudflare `CF-IPCountry`, depois `Accept-Langua
 - [Integração LiteLLM](docs/litellm.md)
 - [Modelo de segurança](docs/security.md)
 - [BYOK](docs/byok.md)
+- [Runtimes locais de assinatura experimentais](docs/experimental-subscription-runtimes.md)
 - [Documentação de provedores](docs/providers/README.md)
 
 ## Licença

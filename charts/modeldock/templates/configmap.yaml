@@ -15,6 +15,7 @@ data:
   PUBLIC_SITE_URL: {{ .Values.urls.publicSiteUrl | quote }}
   PUBLIC_APP_URL: {{ .Values.urls.publicAppUrl | quote }}
   PUBLIC_API_URL: {{ .Values.urls.publicApiUrl | quote }}
+  SERVER_API_URL: "http://{{ include "modeldock.fullname" . }}-api:{{ (index .Values.workloads "api").port }}"
   ADMIN_APP_URL: {{ .Values.urls.adminAppUrl | quote }}
   TRUSTED_ORIGINS: {{ .Values.urls.trustedOrigins | quote }}
   ADMIN_ALLOWED_IPS: {{ .Values.config.adminAllowedIps | quote }}
@@ -30,6 +31,8 @@ data:
   EXPERIMENTAL_SUBSCRIPTION_OAUTH: {{ .Values.config.experimentalSubscriptionOauth | quote }}
   EXPERIMENTAL_CHATGPT_SUBSCRIPTION: {{ .Values.config.experimentalChatgptSubscription | quote }}
   EXPERIMENTAL_CLAUDE_SUBSCRIPTION: {{ .Values.config.experimentalClaudeSubscription | quote }}
+  MODELDOCK_CODEX_COMMAND: {{ .Values.config.modeldockCodexCommand | quote }}
+  MODELDOCK_CLAUDE_COMMAND: {{ .Values.config.modeldockClaudeCommand | quote }}
   CLOUDFLARE_ACCESS_ENABLED: {{ .Values.config.cloudflareAccessEnabled | quote }}
   CLOUDFLARE_ACCESS_TEAM_DOMAIN: {{ .Values.config.cloudflareAccessTeamDomain | quote }}
   CLOUDFLARE_ACCESS_ALLOWED_AUDIENCES: {{ .Values.config.cloudflareAccessAllowedAudiences | quote }}

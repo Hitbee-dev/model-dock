@@ -1,3 +1,4 @@
+import { execFile } from "node:child_process";
 import { createServer } from "node:http";
 import { createCloudflareAccessVerifier, hashPassword } from "@modeldock/auth";
 import { createMemoryAuthStore } from "./auth-store.js";
@@ -7,6 +8,22 @@ import { createRegistrationStoreFromEnv } from "./postgres.js";
 import { createMemoryRagDocumentStore, createRagDocumentStoreFromEnv } from "./rag-documents.js";
 import { createMemoryRateLimiter } from "./rate-limit.js";
 import { createMemoryRegistrationStore } from "./registrations.js";
+
+function runCliStatus(command: string, args: string[], timeoutMs: number) {
+  return new Promise<{ exitCode: number; stderr: string; stdout: string }>((resolve, reject) => {
+    execFile(command, args, { timeout: timeoutMs }, (error, stdout, stderr) => {
+      if (error && "code" in error && error.code === "ENOENT") {
+        reject(error);
+        return;
+      }
+      resolve({
+        exitCode: typeof error?.code === "number" ? error.code : 0,
+        stderr,
+        stdout
+      });
+    });
+  });
+}
 
 const port = Number(process.env.PORT ?? 3002);
 const host = process.env.HOST ?? "127.0.0.1";
@@ -94,7 +111,15 @@ const server = createServer(
     registrations,
     secureCookies: process.env.NODE_ENV === "production",
     sessionSecret: process.env.SESSION_SECRET,
-    sessionTtlSeconds: Number(process.env.SESSION_TTL_SECONDS ?? 60 * 60 * 24 * 7)
+    sessionTtlSeconds: Number(process.env.SESSION_TTL_SECONDS ?? 60 * 60 * 24 * 7),
+    subscriptionRuntimeConfig: {
+      codexCommand: process.env.MODELDOCK_CODEX_COMMAND,
+      claudeCommand: process.env.MODELDOCK_CLAUDE_COMMAND,
+      experimentalChatGPTSubscription: process.env.EXPERIMENTAL_CHATGPT_SUBSCRIPTION === "true",
+      experimentalClaudeSubscription: process.env.EXPERIMENTAL_CLAUDE_SUBSCRIPTION === "true",
+      experimentalSubscriptionOAuth: process.env.EXPERIMENTAL_SUBSCRIPTION_OAUTH === "true"
+    },
+    subscriptionRuntimeRunner: runCliStatus
   })
 );
 

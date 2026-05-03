@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   createCredentialRef,
   createProviderValidationPlan,
+  createSubscriptionRuntimeDefinitions,
   credentialEncryptionContext,
   deleteCredential,
   isSubscriptionOAuthEnabled,
+  probeConfiguredSubscriptionRuntimes,
   rotateProviderCredential,
   storeProviderCredential,
   toCredentialResponse,
@@ -27,6 +29,41 @@ describe("BYOK contracts", () => {
   it("keeps subscription OAuth disabled unless explicitly enabled", () => {
     expect(isSubscriptionOAuthEnabled(false)).toBe(false);
     expect(isSubscriptionOAuthEnabled(true)).toBe(true);
+  });
+
+  it("keeps local subscription runtimes disabled behind explicit flags", () => {
+    const runtimes = createSubscriptionRuntimeDefinitions({
+      experimentalSubscriptionOAuth: true,
+      experimentalChatGPTSubscription: false,
+      experimentalClaudeSubscription: false
+    });
+
+    expect(runtimes).toMatchObject([
+      { id: "codex_local", enabled: false },
+      { id: "claude_local", enabled: false }
+    ]);
+  });
+
+  it("probes local subscription runtimes without returning tokens", async () => {
+    const probes = await probeConfiguredSubscriptionRuntimes(
+      {
+        experimentalSubscriptionOAuth: true,
+        experimentalChatGPTSubscription: true,
+        experimentalClaudeSubscription: true
+      },
+      async (command) => ({
+        exitCode: command === "codex" ? 0 : 1,
+        stdout: command === "codex" ? "Logged in using ChatGPT" : '{"loggedIn": false}',
+        stderr: ""
+      })
+    );
+
+    expect(probes).toMatchObject([
+      { id: "codex_local", status: "ready" },
+      { id: "claude_local", status: "error" }
+    ]);
+    expect(JSON.stringify(probes)).not.toContain("refresh");
+    expect(JSON.stringify(probes)).not.toContain("access_token");
   });
 
   it("creates provider credential refs without exposing secrets", () => {

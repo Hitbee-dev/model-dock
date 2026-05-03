@@ -48,37 +48,37 @@ const supportedLocales: readonly SupportedLocale[] = ["en", "ko", "zh", "ja", "e
 const navLabels: Record<SupportedLocale, Record<ModelDockSurface, string[][]>> = {
   en: {
     web: [["/", "Overview"], ["/chat", "Chat"], ["/providers", "Providers"], ["/signup", "Access"]],
-    admin: [["/", "Approvals"], ["/audit", "Audit"], ["/settings", "Settings"]],
+    admin: [["/", "Approvals"], ["/subscription-runtimes", "Runtimes"], ["/audit", "Audit"], ["/settings", "Settings"]],
     api: []
   },
   ko: {
     web: [["/", "개요"], ["/chat", "채팅"], ["/providers", "공급자"], ["/signup", "접근 요청"]],
-    admin: [["/", "승인"], ["/audit", "감사"], ["/settings", "설정"]],
+    admin: [["/", "승인"], ["/subscription-runtimes", "런타임"], ["/audit", "감사"], ["/settings", "설정"]],
     api: []
   },
   zh: {
     web: [["/", "概览"], ["/chat", "聊天"], ["/providers", "提供方"], ["/signup", "访问"]],
-    admin: [["/", "审批"], ["/audit", "审计"], ["/settings", "设置"]],
+    admin: [["/", "审批"], ["/subscription-runtimes", "运行时"], ["/audit", "审计"], ["/settings", "设置"]],
     api: []
   },
   ja: {
     web: [["/", "概要"], ["/chat", "チャット"], ["/providers", "プロバイダー"], ["/signup", "アクセス"]],
-    admin: [["/", "承認"], ["/audit", "監査"], ["/settings", "設定"]],
+    admin: [["/", "承認"], ["/subscription-runtimes", "ランタイム"], ["/audit", "監査"], ["/settings", "設定"]],
     api: []
   },
   es: {
     web: [["/", "Resumen"], ["/chat", "Chat"], ["/providers", "Proveedores"], ["/signup", "Acceso"]],
-    admin: [["/", "Aprobaciones"], ["/audit", "Auditoría"], ["/settings", "Ajustes"]],
+    admin: [["/", "Aprobaciones"], ["/subscription-runtimes", "Runtimes"], ["/audit", "Auditoría"], ["/settings", "Ajustes"]],
     api: []
   },
   vi: {
     web: [["/", "Tổng quan"], ["/chat", "Chat"], ["/providers", "Nhà cung cấp"], ["/signup", "Truy cập"]],
-    admin: [["/", "Phê duyệt"], ["/audit", "Nhật ký"], ["/settings", "Cài đặt"]],
+    admin: [["/", "Phê duyệt"], ["/subscription-runtimes", "Runtime"], ["/audit", "Nhật ký"], ["/settings", "Cài đặt"]],
     api: []
   },
   pt: {
     web: [["/", "Visao geral"], ["/chat", "Chat"], ["/providers", "Provedores"], ["/signup", "Acesso"]],
-    admin: [["/", "Aprovacoes"], ["/audit", "Auditoria"], ["/settings", "Configuracoes"]],
+    admin: [["/", "Aprovacoes"], ["/subscription-runtimes", "Runtimes"], ["/audit", "Auditoria"], ["/settings", "Configuracoes"]],
     api: []
   }
 };

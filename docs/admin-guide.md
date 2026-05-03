@@ -67,6 +67,23 @@ Current MVP note: access rules edited in the admin UI are runtime rules. Persist
 them through environment variables or a future database-backed settings store
 before relying on them for long-running production administration.
 
+## Experimental runtimes
+
+Open:
+
+```text
+http://127.0.0.1:3001/subscription-runtimes
+```
+
+This page checks local CLI subscription runtimes such as Codex CLI and Claude
+Code CLI. It reports installation and login state only. It does not read or
+store OAuth tokens.
+
+Keep these runtimes disabled unless the provider terms explicitly allow the
+intended per-user use. See
+[Experimental local subscription runtimes](experimental-subscription-runtimes.md)
+for flags, security rules, and Kubernetes notes.
+
 ## Release checklist
 
 Before connecting a domain:

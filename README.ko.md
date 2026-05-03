@@ -95,6 +95,7 @@ Postgres:  기본값은 Docker 내부 네트워크 전용
 | RAG | Weaviate, Redis, PostgreSQL, S3 호환 저장소 기반 |
 | MCP와 스킬 | 사용자별 설정, 권한 프롬프트, 감사 메타데이터 |
 | 관리자 앱 | 별도 보호 호스트와 역할 기반 접근 제어 |
+| 실험적 로컬 런타임 | Codex CLI / Claude Code CLI 로그인 상태 확인, 토큰 미저장 |
 
 ## 문서
 
@@ -107,6 +108,7 @@ Postgres:  기본값은 Docker 내부 네트워크 전용
 - [LiteLLM 연동](docs/litellm.md)
 - [보안 모델](docs/security.md)
 - [BYOK](docs/byok.md)
+- [실험적 로컬 구독 런타임](docs/experimental-subscription-runtimes.md)
 - [제공자 문서](docs/providers/README.md)
 
 ## 라이선스

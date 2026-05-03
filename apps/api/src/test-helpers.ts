@@ -10,6 +10,7 @@ import {
 import { createMemoryRateLimiter } from "./rate-limit.js";
 import { createMemoryRegistrationStore, type RegistrationStore } from "./registrations.js";
 import type { ProviderValidationFetch } from "@modeldock/byok";
+import type { SubscriptionRuntimeCommandRunner, SubscriptionRuntimeConfig } from "@modeldock/byok";
 
 async function* streamChunks(chunks: string[]): AsyncIterable<string> {
   yield* chunks;
@@ -61,6 +62,8 @@ export function createTestHandler(
     users?: AuthUser[];
     authStore?: AuthStore;
     sessionSecret?: string;
+    subscriptionRuntimeConfig?: SubscriptionRuntimeConfig;
+    subscriptionRuntimeRunner?: SubscriptionRuntimeCommandRunner;
     providerValidationFetch?: ProviderValidationFetch;
     chatCompletionFetch?: ChatCompletionStreamFetch;
     ragDocumentStore?: RagDocumentStore;
@@ -89,6 +92,8 @@ export function createTestHandler(
     registrations: input.registrations ?? createMemoryRegistrationStore(),
     secureCookies: false,
     sessionSecret: input.sessionSecret ?? "test-session-secret-that-is-at-least-32-bytes",
-    sessionTtlSeconds: 3600
+    sessionTtlSeconds: 3600,
+    subscriptionRuntimeConfig: input.subscriptionRuntimeConfig,
+    subscriptionRuntimeRunner: input.subscriptionRuntimeRunner
   });
 }

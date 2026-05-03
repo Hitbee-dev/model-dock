@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createAdminAccessGate } from "./access.js";
-import { renderAccessSettingsPage, renderApprovalsPage, renderLoginPage } from "./pages.js";
+import { renderAccessSettingsPage, renderApprovalsPage, renderLoginPage, renderSubscriptionRuntimesPage } from "./pages.js";
 
 describe("admin scaffold", () => {
   it("documents a dedicated admin service", () => {
@@ -71,5 +71,26 @@ describe("admin scaffold", () => {
     expect(page).toContain("Allowed IPs");
     expect(page).toContain("127.0.0.1");
     expect(page).toContain("/settings/access-rules/delete");
+  });
+
+  it("renders experimental local subscription runtime status", () => {
+    const page = renderSubscriptionRuntimesPage({
+      runtimes: [
+        {
+          command: "codex",
+          displayName: "Codex CLI",
+          enabled: true,
+          id: "codex_local",
+          loginHint: "codex login",
+          message: "Local CLI is installed and authenticated.",
+          status: "ready",
+          termsWarning: "Experimental local Codex runtime uses the operator's local Codex CLI login."
+        }
+      ]
+    });
+
+    expect(page).toContain("Codex CLI");
+    expect(page).toContain("ready");
+    expect(page).not.toContain("access_token");
   });
 });
