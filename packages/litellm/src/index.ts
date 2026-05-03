@@ -1,10 +1,15 @@
+export * from "./headers.js";
+export * from "./spend.js";
+
+import { createLiteLLMHeaders } from "./headers.js";
+
 export type LiteLLMClientOptions = {
   baseUrl: string;
   masterKey: string;
   fetch: LiteLLMFetch;
 };
 
-export type LiteLLMFetch = (url: string, init: { method: string; headers: Record<string, string>; body: string }) => Promise<{
+export type LiteLLMFetch = (url: string, init: { method: string; headers: Record<string, string>; body?: string }) => Promise<{
   ok: boolean;
   status: number;
   json(): Promise<unknown>;
@@ -43,12 +48,6 @@ export type LiteLLMProvisioningPlan = {
   virtualKey: LiteLLMVirtualKeyCreateRequest;
 };
 
-function assertServerRuntime(): void {
-  if (typeof (globalThis as { window?: unknown }).window !== "undefined") {
-    throw new Error("LiteLLM secret-bearing helpers can only run on the server.");
-  }
-}
-
 function yamlScalar(value: string): string {
   if (/[\r\n]/.test(value)) {
     throw new Error("LiteLLM config values cannot contain newlines.");
@@ -61,14 +60,6 @@ function validateCredentialRef(value: string): string {
     throw new Error("Invalid LiteLLM credential environment reference.");
   }
   return value;
-}
-
-export function createLiteLLMHeaders(masterKey: string): Record<string, string> {
-  assertServerRuntime();
-  return {
-    authorization: `Bearer ${masterKey}`,
-    "content-type": "application/json"
-  };
 }
 
 function normalizeBaseUrl(baseUrl: string): string {
