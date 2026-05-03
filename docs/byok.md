@@ -35,6 +35,7 @@ Provider validation is rate-limited and server-mediated. Validation responses co
 
 ## Related links
 
+- [Provider guides](providers/README.md)
 - [Security](security.md)
 - [LiteLLM integration](litellm.md)
 

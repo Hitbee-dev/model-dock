@@ -153,7 +153,7 @@ Use Cloudflare Access or an equivalent identity-aware proxy, application-level r
 
 BYOK means Bring Your Own Key. Users connect their own provider API keys, such as OpenAI, Anthropic, Gemini, OpenRouter, or a local OpenAI-compatible endpoint. ModelDock stores those credentials securely and uses them only to make model requests on behalf of that user.
 
-Credential vault requirements are scaffolded in `packages/crypto` and documented in [docs/byok.md](docs/byok.md) and [docs/security.md](docs/security.md). Keys must be encrypted at rest, never logged, and never returned to the browser after initial save.
+Credential vault requirements are scaffolded in `packages/crypto` and documented in [docs/byok.md](docs/byok.md), [docs/providers](docs/providers/README.md), and [docs/security.md](docs/security.md). Keys must be encrypted at rest, never logged, and never returned to the browser after initial save.
 
 ## Credits and budgets
 

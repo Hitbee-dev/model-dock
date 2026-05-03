@@ -54,7 +54,7 @@
 - [x] Add rate-limited API endpoint for provider validation.
 - [x] Add credential deletion contract.
 - [x] Add credential rotation implementation.
-- [ ] Add provider-specific docs for OpenAI, Anthropic, Gemini, OpenRouter, Ollama, and vLLM.
+- [x] Add provider-specific docs for OpenAI, Anthropic, Gemini, OpenRouter, Ollama, and vLLM.
 
 ## Phase 5 - Chat and folders
 
