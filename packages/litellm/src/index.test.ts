@@ -8,6 +8,7 @@ import {
   listLiteLLMSpendRecords,
   normalizeLiteLLMSpendRows,
   renderLiteLLMConfig,
+  syncLiteLLMSpend,
   type LiteLLMFetch
 } from "./index.js";
 
@@ -196,6 +197,50 @@ describe("LiteLLM helpers", () => {
         method: "GET",
         authorization: "Bearer server-only",
         body: undefined
+      }
+    ]);
+  });
+
+  it("syncs LiteLLM spend records into an idempotent ledger writer", async () => {
+    const ledgerEntries: unknown[] = [];
+    const existingIds = new Set(["req_existing"]);
+    const fetch: LiteLLMFetch = async () => ({
+      ok: true,
+      status: 200,
+      async json() {
+        return [
+          { request_id: "req_existing", user_id: "user_1", spend: 0.5, startTime: "2026-05-03T00:00:00Z" },
+          { request_id: "req_new", user_id: "user_1", spend: 1.25, endTime: "2026-05-03T00:01:00Z" }
+        ];
+      }
+    });
+
+    const result = await syncLiteLLMSpend({
+      clientOptions: { baseUrl: "http://litellm:4000", masterKey: "server-only", fetch },
+      ledger: {
+        async hasSpendExternalId(externalId) {
+          return existingIds.has(externalId);
+        },
+        async recordSpend(entry) {
+          existingIds.add(entry.externalId);
+          ledgerEntries.push(entry);
+        }
+      }
+    });
+
+    expect(result).toEqual({
+      fetched: 2,
+      recorded: 1,
+      skipped: 1,
+      nextCursor: { requestId: "req_new" }
+    });
+    expect(ledgerEntries).toEqual([
+      {
+        userId: "user_1",
+        amountUsd: -1.25,
+        source: "litellm_spend",
+        externalId: "req_new",
+        createdAt: "2026-05-03T00:01:00.000Z"
       }
     ]);
   });

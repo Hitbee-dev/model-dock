@@ -3,7 +3,7 @@
 The initial skeleton is intentionally small. Exact follow-up work:
 
 1. Add browser Provider Settings UI on top of the API validation endpoint.
-2. Add live LiteLLM spend sync job and opt-in integration tests.
+2. Add mock and live LiteLLM integration tests.
 3. Wire chat streaming and RAG context injection into the API/browser flow.
 4. Add real environment loading from `.env`.
 5. Add database migrations for required domains.

@@ -43,7 +43,7 @@
 - [x] Enforce model allowlist contract.
 - [x] Add spend sync ledger contract.
 - [x] Add LiteLLM spend log normalization and client query contract.
-- [ ] Add live spend sync job.
+- [x] Add live spend sync job.
 - [ ] Add mock and live LiteLLM integration tests.
 
 ## Phase 4 - BYOK and provider vault

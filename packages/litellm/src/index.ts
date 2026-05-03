@@ -1,5 +1,6 @@
 export * from "./headers.js";
 export * from "./spend.js";
+export * from "./spend-sync.js";
 
 import { createLiteLLMHeaders } from "./headers.js";
 
