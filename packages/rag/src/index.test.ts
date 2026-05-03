@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { chunkText } from "./chunking.js";
+import { createRagAugmentedMessages, createRagContextBlock } from "./chat-context.js";
 import { createRagDeletionPlan, createRagIngestPlan } from "./ingest.js";
 import { createRetrievalPlan, createTenantScope } from "./weaviate.js";
 
@@ -80,5 +81,74 @@ describe("rag contracts", () => {
 
     expect(plan.where.operands).toHaveLength(2);
     expect(plan.where.operands.map((operand) => operand.valueText)).toEqual(["doc_1", "user_1"]);
+  });
+
+  it("creates tenant-scoped chat context without source query secrets", () => {
+    const scope = createTenantScope({ authenticatedUserId: "user_1", documentOwnerId: "user_1" });
+    const context = createRagContextBlock({
+      scope,
+      maxContextCharacters: 500,
+      chunks: [
+        {
+          id: "doc_1:0",
+          tenantId: "user_1",
+          documentId: "doc_1",
+          text: "Budget policy details",
+          sourceUri: "s3://bucket/doc.txt?token=secret#fragment"
+        }
+      ]
+    });
+
+    expect(context).toContain("Budget policy details");
+    expect(context).toContain("s3://bucket/doc.txt");
+    expect(context).not.toContain("token=secret");
+  });
+
+  it("rejects retrieved chunks outside the server-derived tenant", () => {
+    const scope = createTenantScope({ authenticatedUserId: "user_1", documentOwnerId: "user_1" });
+
+    expect(() =>
+      createRagContextBlock({
+        scope,
+        maxContextCharacters: 500,
+        chunks: [{ id: "doc_1:0", tenantId: "user_2", documentId: "doc_1", text: "other tenant" }]
+      })
+    ).toThrow("tenant scope");
+  });
+
+  it("rejects obvious secret-bearing RAG context", () => {
+    const scope = createTenantScope({ authenticatedUserId: "user_1", documentOwnerId: "user_1" });
+
+    expect(() =>
+      createRagContextBlock({
+        scope,
+        maxContextCharacters: 500,
+        chunks: [{ id: "doc_1:0", tenantId: "user_1", documentId: "doc_1", text: "api_key=secret" }]
+      })
+    ).toThrow("secret-bearing");
+  });
+
+  it("augments chat messages only when retrieved context exists", () => {
+    const scope = createTenantScope({ authenticatedUserId: "user_1", documentOwnerId: "user_1" });
+
+    expect(
+      createRagAugmentedMessages({
+        scope,
+        userMessage: "What is my budget?",
+        chunks: [],
+        maxContextCharacters: 500
+      })
+    ).toEqual([{ role: "user", content: "What is my budget?" }]);
+
+    const messages = createRagAugmentedMessages({
+      scope,
+      userMessage: "What is my budget?",
+      maxContextCharacters: 500,
+      chunks: [{ id: "doc_1:0", tenantId: "user_1", documentId: "doc_1", text: "Budget is five dollars." }]
+    });
+
+    expect(messages[0]?.role).toBe("system");
+    expect(messages[0]?.content).toContain("tenant-scoped reference context");
+    expect(messages[1]).toEqual({ role: "user", content: "What is my budget?" });
   });
 });
