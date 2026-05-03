@@ -1,13 +1,13 @@
-# ModelDock vs LibreChat
+# LibreChat Integration Context
 
-LibreChat is a strong self-hosted AI chat platform with multi-provider conversations, agents, MCP, artifacts, and multi-user auth. ModelDock focuses on LiteLLM-first service operations.
+LibreChat is a self-hosted AI chat platform with multi-provider conversations, agents, MCP, artifacts, and multi-user auth. ModelDock is a LiteLLM-first service-operations control plane.
 
-## When to choose LibreChat
+## LibreChat context
 
-Choose LibreChat when chat features and agent workflows are the main priority.
+LibreChat is commonly used for multi-provider chat features and agent workflows.
 
-## When to choose ModelDock
+## ModelDock context
 
-Choose ModelDock when BYOK onboarding, user credits, budgets, admin service workflows, and LiteLLM routing are central to the product.
+ModelDock is designed for BYOK onboarding, user credits, budgets, admin service workflows, and LiteLLM routing.
 
 Last updated: 2026-05-02

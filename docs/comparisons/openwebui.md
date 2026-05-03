@@ -1,13 +1,13 @@
-# ModelDock vs OpenWebUI
+# OpenWebUI Integration Context
 
-OpenWebUI is a strong self-hosted AI web interface. ModelDock focuses on the service-operator layer for a LiteLLM-first multi-user LLM service.
+OpenWebUI is a self-hosted AI web interface. ModelDock is a service-operator control plane for a LiteLLM-first multi-user LLM service.
 
-## When to choose OpenWebUI
+## OpenWebUI context
 
-Choose OpenWebUI when you primarily want a mature AI workspace and chat UI.
+OpenWebUI is commonly used for self-hosted AI workspaces and chat UI workflows.
 
-## When to choose ModelDock
+## ModelDock context
 
-Choose ModelDock when you need signup, user-owned provider keys, credits, budgets, LiteLLM virtual keys, provider credential vault, admin workflows, and deployment baseline.
+ModelDock is designed for signup, user-owned provider keys, credits, budgets, LiteLLM virtual keys, provider credential vault, admin workflows, and deployment baseline.
 
 Last updated: 2026-05-02

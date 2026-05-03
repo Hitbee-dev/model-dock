@@ -4,9 +4,9 @@ ModelDock is an open-source control plane for self-hosted multi-user LLM apps bu
 It docks providers, BYOK credentials, credits, budgets, LiteLLM routing, chat interfaces,
 admin controls, MCP, skills, and deployment templates into one deployable service.
 
-Use it when OpenWebUI or LibreChat gives you a great chat UI, but you still need
-service-operator features such as signup, provider key management, LiteLLM virtual
-keys, credits, budgets, and admin workflows.
+Use it when you need service-operator features such as signup, provider key
+management, LiteLLM virtual keys, credits, budgets, and admin workflows around a
+self-hosted LLM service.
 
 ## What is ModelDock?
 
@@ -175,13 +175,13 @@ ModelDock owns signup, auth, BYOK UI, credential vault, credit ledger, admin wor
 
 See [docs/litellm.md](docs/litellm.md) and [docs/litellm/compatibility.md](docs/litellm/compatibility.md).
 
-## How it compares
+## Ecosystem context
 
-| Project | Best at | Where ModelDock fits |
+| Project | Role in the ecosystem | Where ModelDock fits |
 | --- | --- | --- |
-| LiteLLM | LLM gateway, provider routing, virtual keys, spend tracking, budgets | ModelDock adds signup, chat UX, BYOK onboarding, credit UI, credential vault, and admin workflows on top of LiteLLM. |
-| OpenWebUI | Feature-rich self-hosted AI workspace | ModelDock focuses on service operations: user credits, provider key management, LiteLLM-first control plane, and deployment baseline. |
-| LibreChat | Self-hosted AI chat platform with multi-provider conversations, agents, and MCP | ModelDock focuses on LiteLLM-first service operations, BYOK, credits, budgets, and operator workflows. |
+| LiteLLM | LLM gateway, provider routing, virtual keys, spend tracking, budgets | ModelDock uses LiteLLM as the gateway layer and adds signup, chat UX, BYOK onboarding, credit UI, credential vault, and admin workflows around it. |
+| OpenWebUI | Self-hosted AI workspace and chat UI | ModelDock is designed as a service-operator control plane that can sit in the same self-hosted AI ecosystem. |
+| LibreChat | Self-hosted AI chat platform with multi-provider conversations, agents, and MCP | ModelDock is designed around LiteLLM-first service operations, BYOK, credits, budgets, and operator workflows. |
 
 ## Security model
 
@@ -220,7 +220,7 @@ Public docs include:
 - [robots.txt](robots.txt)
 - [sitemap.xml](sitemap.xml)
 - Markdown docs under [docs](docs)
-- Comparison pages under [docs/comparisons](docs/comparisons)
+- Ecosystem context pages under [docs/comparisons](docs/comparisons)
 
 These practices improve discoverability and make ModelDock easier for AI search systems to understand and cite. They do not guarantee indexing, ranking, citation, or model inclusion.
 

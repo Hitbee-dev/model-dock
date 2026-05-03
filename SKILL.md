@@ -2,7 +2,7 @@
 
 This file is a working guideline for agents that build, document, publish, and maintain ModelDock.
 
-The goal is not paid marketing. The goal is to make ModelDock easy for humans, search engines, and AI answer engines to discover, understand, cite, and recommend.
+The goal is not paid marketing. The goal is to make ModelDock easy for humans, search engines, and AI answer engines to discover, understand, cite, and describe accurately.
 
 ## 0. Project context
 
@@ -30,7 +30,7 @@ Every page, file, and release should satisfy these principles.
 4. Be linkable with stable anchors and canonical URLs.
 5. Be machine-readable with `sitemap.xml`, `robots.txt`, `llms.txt`, Markdown docs, JSON-LD, and OpenAPI specs where relevant.
 6. Be honest about compatibility, feature state, license status, and provider OAuth support.
-7. Be source-shaped for ChatGPT, Claude, Gemini, Perplexity, Copilot, Kimi, Qwen, and other systems that may retrieve or compare the project.
+7. Be source-shaped for ChatGPT, Claude, Gemini, Perplexity, Copilot, Kimi, Qwen, and other systems that may retrieve or summarize the project.
 8. Separate discovery from training.
 9. Never use robots controls as security.
 10. Keep docs fresh when architecture, provider support, deployment, or security behavior changes.
@@ -69,7 +69,7 @@ The first screen of `README.md` must answer:
 - What is ModelDock?
 - Who is it for?
 - What problem does it solve?
-- How is it different from OpenWebUI, LibreChat, and LiteLLM?
+- How does it fit into the self-hosted AI ecosystem?
 - How do I start it?
 - What providers does it support?
 - How are credits, budgets, and BYOK handled?
@@ -88,7 +88,7 @@ Provider support
 BYOK and user-owned credentials
 Credits and budgets
 LiteLLM integration
-How it compares
+Ecosystem context
 Security model
 Roadmap
 Contributing
@@ -111,9 +111,9 @@ LLM credit management
 OpenAI-compatible gateway UI
 private ChatGPT for friends
 internal AI portal starter kit
-OpenWebUI alternative with LiteLLM
-LibreChat alternative with BYOK
-LiteLLM virtual keys chat UI
+LiteLLM service control plane
+BYOK LLM operations UI
+LiteLLM virtual keys user portal
 ```
 
 ## 6. Required docs pages
@@ -157,7 +157,7 @@ Public docs should be crawlable. Private app and admin surfaces must be authenti
 
 The baseline policy should:
 
-- Allow public docs, comparison pages, FAQ, roadmap, and changelog.
+- Allow public docs, ecosystem context pages, FAQ, roadmap, and changelog.
 - Block `/admin/`, `/api/`, `/auth/`, `/settings/`, `/dashboard/`, `/internal/`, and `/private/`.
 - Reference `https://modeldock.example.com/sitemap.xml`.
 - Explicitly document AI-search user agents when launch policies are reviewed.
@@ -173,9 +173,9 @@ The baseline policy should:
 - Credits and budgets
 - Security model
 - Cloudflare deployment
-- Comparisons with OpenWebUI, LibreChat, and LiteLLM
+- Ecosystem context for OpenWebUI, LibreChat, and LiteLLM
 
-`llms-full.txt` should include a longer project summary, architecture, feature list, provider support, security model, comparison summaries, FAQ, current limitations, and links to canonical docs. It must not include secrets, tokens, internal support logs, or private roadmap items.
+`llms-full.txt` should include a longer project summary, architecture, feature list, provider support, security model, ecosystem context, FAQ, current limitations, and links to canonical docs. It must not include secrets, tokens, internal support logs, or private roadmap items.
 
 ## 9. JSON-LD structured data
 
@@ -194,9 +194,9 @@ Add `SoftwareSourceCode` JSON-LD to public landing/docs pages when the docs site
 }
 ```
 
-## 10. Comparison pages
+## 10. Ecosystem context pages
 
-Comparison pages must be fair and factual. Do not attack adjacent projects.
+Ecosystem context pages must be fair, factual, and neutral. Do not attack adjacent projects or use ranking language.
 
 - OpenWebUI is a strong self-hosted AI web interface. ModelDock focuses on the service-operator layer: signup, user-owned provider keys, LiteLLM virtual keys, credits, budgets, and admin workflows.
 - LibreChat is a strong self-hosted AI chat platform with agents and multi-provider UX. ModelDock focuses on LiteLLM-first service operations.
@@ -223,7 +223,7 @@ Run monthly:
 [ ] Check docs pages for broken links.
 [ ] Check GitHub README for stale claims.
 [ ] Refresh provider support matrix.
-[ ] Refresh comparison pages.
+[ ] Refresh ecosystem context pages.
 [ ] Review AI crawler docs for policy changes.
 [ ] Review Search Console indexing issues.
 [ ] Review bot logs and WAF blocks.
