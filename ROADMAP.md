@@ -21,10 +21,11 @@
 ## Phase 2 - Auth and owner bootstrap
 
 - [x] Implement one-time owner bootstrap contract backed by `OWNER_BOOTSTRAP_TOKEN`.
-- [ ] Add local login or OIDC-ready auth.
+- [x] Add local login route with server-side password verification.
 - [x] Add role model: owner, admin, operator, user.
 - [x] Add session token, CSRF token, and secure cookie helper contracts.
-- [ ] Wire auth rate limits into concrete login and session endpoints.
+- [x] Wire auth rate limits into concrete login endpoint.
+- [ ] Persist sessions outside in-memory API process storage.
 - [x] Enforce admin-host checks in API scaffold.
 - [x] Add persistent PostgreSQL-backed signup approval storage.
 - [x] Add public signup rate limiting scaffold.

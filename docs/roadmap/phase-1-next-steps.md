@@ -2,7 +2,7 @@
 
 The initial skeleton is intentionally small. Exact follow-up work:
 
-1. Wire login, session issuance, and CSRF checks into concrete API routes.
+1. Persist sessions and password hashes in PostgreSQL instead of process memory.
 2. Add browser Provider Settings UI on top of the API validation endpoint.
 3. Add live LiteLLM spend sync job and opt-in integration tests.
 4. Wire chat streaming and RAG context injection into the API/browser flow.
