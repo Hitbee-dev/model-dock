@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "modeldock.fullname" . }}-config
+  labels:
+    {{- include "modeldock.labels" . | nindent 4 }}
+data:
+  NODE_ENV: {{ ternary "production" .Values.config.nodeEnv .Values.global.production | quote }}
+  PUBLIC_SITE_URL: {{ .Values.urls.publicSiteUrl | quote }}
+  PUBLIC_APP_URL: {{ .Values.urls.publicAppUrl | quote }}
+  PUBLIC_API_URL: {{ .Values.urls.publicApiUrl | quote }}
+  ADMIN_APP_URL: {{ .Values.urls.adminAppUrl | quote }}
+  TRUSTED_ORIGINS: {{ .Values.urls.trustedOrigins | quote }}
+  PUBLIC_REGISTRATION_ENABLED: {{ .Values.config.publicRegistrationEnabled | quote }}
+  ADMIN_BOOTSTRAP_ENABLED: {{ .Values.config.adminBootstrapEnabled | quote }}
+  LOG_CHAT_CONTENT: {{ .Values.config.logChatContent | quote }}
+  DEFAULT_USER_CREDITS_USD: {{ .Values.config.defaultUserCreditsUsd | quote }}
+  DEFAULT_BUDGET_DURATION: {{ .Values.config.defaultBudgetDuration | quote }}
+  EXPERIMENTAL_SUBSCRIPTION_OAUTH: {{ .Values.config.experimentalSubscriptionOauth | quote }}
+  EXPERIMENTAL_CHATGPT_SUBSCRIPTION: {{ .Values.config.experimentalChatgptSubscription | quote }}
+  EXPERIMENTAL_CLAUDE_SUBSCRIPTION: {{ .Values.config.experimentalClaudeSubscription | quote }}
+  CLOUDFLARE_ACCESS_ENABLED: {{ .Values.config.cloudflareAccessEnabled | quote }}
+  CLOUDFLARE_ACCESS_TEAM_DOMAIN: {{ .Values.config.cloudflareAccessTeamDomain | quote }}
+  CLOUDFLARE_ACCESS_ALLOWED_AUDIENCES: {{ .Values.config.cloudflareAccessAllowedAudiences | quote }}
+  CLOUDFLARE_ACCESS_ALLOWED_EMAILS: {{ .Values.config.cloudflareAccessAllowedEmails | quote }}
+  LITELLM_BASE_URL: "http://{{ include "modeldock.fullname" . }}-litellm:{{ .Values.litellm.port }}"
+  WEAVIATE_URL: {{ .Values.config.weaviateUrl | quote }}
+  S3_ENDPOINT: {{ .Values.config.s3Endpoint | quote }}
+  S3_REGION: {{ .Values.config.s3Region | quote }}
+  S3_BUCKET: {{ .Values.config.s3Bucket | quote }}

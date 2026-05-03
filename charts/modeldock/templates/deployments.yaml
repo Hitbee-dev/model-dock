@@ -1,0 +1,57 @@
+{{- range $name, $workload := .Values.workloads }}
+{{- if $workload.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "modeldock.fullname" $ }}-{{ $name }}
+  labels:
+    {{- include "modeldock.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $name | quote }}
+spec:
+  replicas: {{ $workload.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "modeldock.selectorLabels" $ | nindent 6 }}
+      app.kubernetes.io/component: {{ $name | quote }}
+  template:
+    metadata:
+      labels:
+        {{- include "modeldock.selectorLabels" $ | nindent 8 }}
+        app.kubernetes.io/component: {{ $name | quote }}
+    spec:
+      securityContext:
+        {{- toYaml $.Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ $name }}
+          image: "{{ $workload.image.repository }}:{{ $workload.image.tag }}"
+          imagePullPolicy: {{ $.Values.global.imagePullPolicy }}
+          securityContext:
+            {{- toYaml $.Values.securityContext | nindent 12 }}
+          ports:
+            - name: http
+              containerPort: {{ $workload.port }}
+          env:
+            - name: HOST
+              value: "0.0.0.0"
+            - name: PORT
+              value: {{ $workload.port | quote }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "modeldock.fullname" $ }}-config
+            {{- if $workload.secretEnv }}
+            - secretRef:
+                name: {{ include "modeldock.secretName" $ }}
+            {{- end }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+          resources:
+            {{- toYaml $.Values.resources | nindent 12 }}
+---
+{{- end }}
+{{- end }}

@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "modeldock.fullname" . }}-litellm-config
+  labels:
+    {{- include "modeldock.labels" . | nindent 4 }}
+data:
+  config.yaml: |
+    model_list: []
+
+    general_settings:
+      master_key: os.environ/LITELLM_MASTER_KEY
+      database_url: os.environ/DATABASE_URL
+      store_model_in_db: true
+      disable_spend_logs: false
+
+    router_settings:
+      routing_strategy: simple-shuffle
+
+    litellm_settings:
+      drop_params: true
+      set_verbose: false

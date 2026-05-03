@@ -1,0 +1,19 @@
+apiVersion: v2
+name: modeldock
+description: A secure-by-default Helm chart for the ModelDock control plane.
+type: application
+version: 0.1.0
+appVersion: "0.0.0"
+keywords:
+  - modeldock
+  - litellm
+  - llm
+  - byok
+  - rag
+home: https://modeldock.example.com
+sources:
+  - https://github.com/modeldock/model-dock
+maintainers:
+  - name: ModelDock Maintainers
+annotations:
+  artifacthub.io/license: MIT

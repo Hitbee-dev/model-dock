@@ -1,0 +1,38 @@
+{{- if .Values.ingress.enabled }}
+{{- range $name, $host := .Values.ingress.hosts }}
+{{- $workload := index $.Values.workloads $name }}
+{{- if and $workload $workload.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "modeldock.fullname" $ }}-{{ $name }}
+  labels:
+    {{- include "modeldock.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $name | quote }}
+  {{- with $.Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if $.Values.ingress.className }}
+  ingressClassName: {{ $.Values.ingress.className | quote }}
+  {{- end }}
+  {{- with $.Values.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    - host: {{ $host.host | quote }}
+      http:
+        paths:
+          - path: {{ $host.path | quote }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "modeldock.fullname" $ }}-{{ $name }}
+                port:
+                  name: http
+---
+{{- end }}
+{{- end }}
+{{- end }}

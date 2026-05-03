@@ -1,0 +1,114 @@
+global:
+  production: false
+  imagePullPolicy: IfNotPresent
+
+urls:
+  publicSiteUrl: https://modeldock.example.com
+  publicAppUrl: https://app.modeldock.example.com
+  publicApiUrl: https://api.modeldock.example.com
+  adminAppUrl: https://admin-random.modeldock.example.com
+  trustedOrigins: https://modeldock.example.com,https://app.modeldock.example.com
+
+workloads:
+  web:
+    enabled: true
+    replicaCount: 1
+    image:
+      repository: ghcr.io/modeldock/web
+      tag: "0.0.0"
+    port: 3000
+    secretEnv: false
+  admin:
+    enabled: true
+    replicaCount: 1
+    image:
+      repository: ghcr.io/modeldock/admin
+      tag: "0.0.0"
+    port: 3001
+    secretEnv: false
+  api:
+    enabled: true
+    replicaCount: 1
+    image:
+      repository: ghcr.io/modeldock/api
+      tag: "0.0.0"
+    port: 3002
+    secretEnv: true
+
+litellm:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ghcr.io/berriai/litellm
+    tag: v1.57.8
+  port: 4000
+
+service:
+  type: ClusterIP
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  tls: []
+  hosts:
+    web:
+      host: app.modeldock.example.com
+      path: /
+    api:
+      host: api.modeldock.example.com
+      path: /
+    admin:
+      host: admin-random.modeldock.example.com
+      path: /
+
+config:
+  nodeEnv: development
+  publicRegistrationEnabled: "false"
+  adminBootstrapEnabled: "false"
+  logChatContent: "false"
+  defaultUserCreditsUsd: "5"
+  defaultBudgetDuration: 30d
+  experimentalSubscriptionOauth: "false"
+  experimentalChatgptSubscription: "false"
+  experimentalClaudeSubscription: "false"
+  cloudflareAccessEnabled: "false"
+  cloudflareAccessTeamDomain: team.cloudflareaccess.com
+  cloudflareAccessAllowedAudiences: replace-with-cloudflare-access-audience
+  cloudflareAccessAllowedEmails: owner@example.com
+  weaviateUrl: http://modeldock-weaviate:8080
+  s3Endpoint: http://modeldock-objectstore:8333
+  s3Region: us-east-1
+  s3Bucket: modeldock
+
+secrets:
+  existingSecret: ""
+  databaseUrl: postgresql://modeldock:replace-with-db-password@postgres:5432/modeldock
+  redisUrl: redis://:replace-with-redis-password@redis:6379/0
+  weaviateApiKey: replace-with-weaviate-app-key
+  s3AccessKeyId: replace-with-s3-access-key
+  s3SecretAccessKey: replace-with-s3-secret-key
+  sessionSecret: replace-with-strong-random-session-secret
+  credentialEncryptionKey: replace-with-strong-random-32-byte-key
+  credentialEncryptionKeyId: default-v1
+  ownerBootstrapToken: replace-with-one-time-local-bootstrap-token
+  adminApiToken: replace-with-strong-admin-api-token
+  litellmMasterKey: replace-with-strong-litellm-master-key
+  openaiApiKey: ""
+  anthropicApiKey: ""
+  geminiApiKey: ""
+  openrouterApiKey: ""
+
+resources: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+      - ALL

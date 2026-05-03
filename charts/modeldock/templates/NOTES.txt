@@ -1,0 +1,11 @@
+ModelDock has been rendered for release {{ .Release.Name }}.
+
+Security defaults:
+- Services use ClusterIP by default.
+- Ingress is disabled until explicitly configured.
+- LiteLLM is internal-only and has no public ingress template.
+- Set global.production=true only after replacing placeholders or using secrets.existingSecret.
+
+Useful checks:
+  helm template {{ .Release.Name }} ./charts/modeldock
+  helm upgrade --install {{ .Release.Name }} ./charts/modeldock --namespace modeldock --create-namespace

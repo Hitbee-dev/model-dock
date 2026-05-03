@@ -1,0 +1,39 @@
+{{- range $name, $workload := .Values.workloads }}
+{{- if $workload.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "modeldock.fullname" $ }}-{{ $name }}
+  labels:
+    {{- include "modeldock.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $name | quote }}
+spec:
+  type: {{ $.Values.service.type }}
+  selector:
+    {{- include "modeldock.selectorLabels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $name | quote }}
+  ports:
+    - name: http
+      port: {{ $workload.port }}
+      targetPort: http
+---
+{{- end }}
+{{- end }}
+{{- if .Values.litellm.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "modeldock.fullname" . }}-litellm
+  labels:
+    {{- include "modeldock.labels" . | nindent 4 }}
+    app.kubernetes.io/component: litellm
+spec:
+  type: ClusterIP
+  selector:
+    {{- include "modeldock.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: litellm
+  ports:
+    - name: http
+      port: {{ .Values.litellm.port }}
+      targetPort: http
+{{- end }}
