@@ -1,10 +1,11 @@
 import pg from "pg";
+import { migrateModelDockDatabase } from "@modeldock/db";
 
 import type { RegistrationStore } from "./registrations.js";
 
 const { Pool } = pg;
 
-type QueryClient = {
+export type QueryClient = {
   query<T = unknown>(text: string, values?: readonly unknown[]): Promise<{ rows: T[] }>;
 };
 
@@ -22,31 +23,16 @@ type ApprovedRegistrationRow = Omit<PendingRegistrationRow, "status"> & {
   approved_by: string;
 };
 
-const migrations = [
-  `create table if not exists users (
-    id text primary key,
-    email text not null unique,
-    display_name text,
-    status text not null,
-    role text not null,
-    created_at timestamptz not null,
-    approved_at timestamptz,
-    approved_by text
-  )`
-] as const;
-
 function toIso(value: Date | string): string {
   return value instanceof Date ? value.toISOString() : value;
 }
 
-function isUsableDatabaseUrl(value: string | undefined): value is string {
+export function isUsableDatabaseUrl(value: string | undefined): value is string {
   return Boolean(value && !value.includes("replace-with-"));
 }
 
 export async function migrateApiDatabase(client: QueryClient): Promise<void> {
-  for (const statement of migrations) {
-    await client.query(`${statement};`);
-  }
+  await migrateModelDockDatabase(client);
 }
 
 export function createPostgresPool(databaseUrl: string): pg.Pool {

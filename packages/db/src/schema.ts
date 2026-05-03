@@ -5,10 +5,18 @@ export const postgresSchema = [
     display_name text,
     status text not null,
     role text not null,
+    password_hash_algorithm text,
+    password_hash_iterations integer,
+    password_hash_salt text,
+    password_hash_value text,
     created_at timestamptz not null,
     approved_at timestamptz,
     approved_by text
   )`,
+  `alter table users add column if not exists password_hash_algorithm text`,
+  `alter table users add column if not exists password_hash_iterations integer`,
+  `alter table users add column if not exists password_hash_salt text`,
+  `alter table users add column if not exists password_hash_value text`,
   `create table if not exists sessions (
     id text primary key,
     user_id text not null references users(id),

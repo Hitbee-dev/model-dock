@@ -6,6 +6,8 @@ describe("postgres schema", () => {
     const schema = renderPostgresSchema();
 
     expect(schema).toContain("create table if not exists users");
+    expect(schema).toContain("password_hash_value text");
+    expect(schema).toContain("alter table users add column if not exists password_hash_value text");
     expect(schema).toContain("create table if not exists sessions");
     expect(schema).toContain("create table if not exists messages");
     expect(schema).toContain("foreign key (conversation_id, user_id)");

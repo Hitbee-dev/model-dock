@@ -29,6 +29,10 @@ function randomToken(): string {
   return randomBytes(32).toString("base64url");
 }
 
+export function hashSessionToken(input: { sessionSecret: string; token: string }): string {
+  return hmacToken(input.sessionSecret, input.token);
+}
+
 export function createSessionTokenPair(input: {
   sessionSecret: string;
   now: Date;
@@ -44,7 +48,7 @@ export function createSessionTokenPair(input: {
 
   return {
     sessionToken,
-    sessionTokenHash: hmacToken(input.sessionSecret, sessionToken),
+    sessionTokenHash: hashSessionToken({ sessionSecret: input.sessionSecret, token: sessionToken }),
     csrfToken,
     csrfTokenHash: hmacToken(input.sessionSecret, csrfToken),
     expiresAt

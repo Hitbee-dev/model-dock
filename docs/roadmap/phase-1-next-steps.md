@@ -2,7 +2,7 @@
 
 The initial skeleton is intentionally small. Exact follow-up work:
 
-1. Persist sessions and password hashes in PostgreSQL instead of process memory.
+1. Implement first-owner password setup and `modeldock create-owner`.
 2. Wire the Cloudflare Access public key/JWT verifier into the admin runtime guard.
 3. Add browser Provider Settings UI on top of the API validation endpoint.
 4. Add live LiteLLM spend sync job and opt-in integration tests.

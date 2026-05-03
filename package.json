@@ -12,7 +12,7 @@
     "lint": "node scripts/lint-placeholder.mjs",
     "format": "node scripts/format-placeholder.mjs",
     "security:env": "node scripts/check-production-env.mjs",
-    "typecheck": "pnpm -r --if-present typecheck",
+    "typecheck": "pnpm build && pnpm -r --if-present typecheck",
     "test": "pnpm -r --if-present test",
     "prepare": "husky"
   },

@@ -25,6 +25,7 @@
   "dependencies": {
     "@modeldock/auth": "workspace:*",
     "@modeldock/byok": "workspace:*",
+    "@modeldock/db": "workspace:*",
     "pg": "^8.20.0"
   },
   "devDependencies": {

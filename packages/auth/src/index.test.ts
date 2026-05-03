@@ -7,6 +7,7 @@ import {
   createPendingRegistration,
   createSessionTokenPair,
   hashPassword,
+  hashSessionToken,
   renderSessionCookie,
   verifyCloudflareAccess,
   verifyPassword,
@@ -78,6 +79,10 @@ describe("auth contracts", () => {
     });
 
     expect(tokens.sessionTokenHash).not.toBe(tokens.sessionToken);
+    expect(hashSessionToken({
+      token: tokens.sessionToken,
+      sessionSecret: "0123456789abcdef0123456789abcdef"
+    })).toBe(tokens.sessionTokenHash);
     expect(verifyTokenHash({
       token: tokens.csrfToken,
       expectedHash: tokens.csrfTokenHash,

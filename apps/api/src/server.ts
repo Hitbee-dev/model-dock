@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 import { createMemoryAuthStore } from "./auth-store.js";
 import { createApiHandler } from "./http.js";
+import { createPostgresAuthStoreFromEnv } from "./postgres-auth-store.js";
 import { createRegistrationStoreFromEnv } from "./postgres.js";
 import { createMemoryRateLimiter } from "./rate-limit.js";
 import { createMemoryRegistrationStore } from "./registrations.js";
@@ -14,11 +15,17 @@ const registrations = await createRegistrationStoreFromEnv({
   nodeEnv: process.env.NODE_ENV
 });
 
+const authStore = await createPostgresAuthStoreFromEnv({
+  databaseUrl: process.env.DATABASE_URL,
+  fallback: createMemoryAuthStore(),
+  nodeEnv: process.env.NODE_ENV
+});
+
 const server = createServer(
   createApiHandler({
     adminAppUrl: process.env.ADMIN_APP_URL ?? "http://127.0.0.1:3001",
     adminApiToken: process.env.ADMIN_API_TOKEN,
-    authStore: createMemoryAuthStore(),
+    authStore,
     cloudflareAccessConfig: {
       enabled: process.env.CLOUDFLARE_ACCESS_ENABLED === "true",
       teamDomain: process.env.CLOUDFLARE_ACCESS_TEAM_DOMAIN ?? "",
