@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
+  appendAssistantStreamEvent,
   createConversation,
   exportConversation,
   exportLocalOnlyConversation,
   importConversation,
+  parseOpenAICompatibleSseLine,
   persistMessage
 } from "./index.js";
 
@@ -198,5 +200,46 @@ describe("chat storage contracts", () => {
 
     expect(payload.conversation.storageMode).toBe("local");
     expect(payload.messages[0]?.content).toBe("private");
+  });
+
+  it("parses OpenAI-compatible stream tokens and completion events", () => {
+    expect(
+      parseOpenAICompatibleSseLine(
+        'data: {"choices":[{"delta":{"content":"Hello"},"finish_reason":null}]}'
+      )
+    ).toEqual([{ type: "token", content: "Hello" }]);
+
+    expect(parseOpenAICompatibleSseLine('data: {"choices":[{"delta":{},"finish_reason":"stop"}]}')).toEqual([
+      { type: "done", finishReason: "stop" }
+    ]);
+    expect(parseOpenAICompatibleSseLine("data: [DONE]")).toEqual([{ type: "done" }]);
+  });
+
+  it("does not expose raw reasoning content from stream chunks", () => {
+    expect(
+      parseOpenAICompatibleSseLine(
+        'data: {"choices":[{"delta":{"reasoning_content":"hidden","content":"Visible"}}]}'
+      )
+    ).toEqual([{ type: "token", content: "Visible" }]);
+  });
+
+  it("turns tool calls and malformed stream frames into safe UI events", () => {
+    expect(parseOpenAICompatibleSseLine('data: {"choices":[{"delta":{"tool_calls":[]}}]}')).toEqual([
+      { type: "status", status: "calling_tool", label: "Calling tool..." }
+    ]);
+    expect(parseOpenAICompatibleSseLine("data: {")).toEqual([{ type: "error", message: "Malformed stream frame." }]);
+  });
+
+  it("appends token events to assistant drafts only", () => {
+    const draft = { conversationId: "chat_1", role: "assistant" as const, content: "" };
+
+    expect(appendAssistantStreamEvent(draft, { type: "token", content: "Hello" }).content).toBe("Hello");
+    expect(appendAssistantStreamEvent(draft, { type: "done" })).toBe(draft);
+    expect(() =>
+      appendAssistantStreamEvent(
+        { conversationId: "chat_1", role: "user", content: "" },
+        { type: "token", content: "Hello" }
+      )
+    ).toThrow("assistant drafts");
   });
 });
