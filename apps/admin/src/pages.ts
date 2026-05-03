@@ -5,7 +5,7 @@ import {
   renderShell,
   type SupportedLocale
 } from "@modeldock/ui";
-import type { SubscriptionRuntimeProbe } from "@modeldock/byok";
+import type { SubscriptionRuntimeInvocationResult, SubscriptionRuntimeProbe } from "@modeldock/byok";
 import type { AccessRuleSnapshot } from "./access.js";
 
 export type PendingApproval = {
@@ -290,9 +290,11 @@ export function renderAccessSettingsPage(input: {
 }
 
 export function renderSubscriptionRuntimesPage(input: {
+  csrfToken?: string;
   locale?: SupportedLocale;
   needsLogin?: boolean;
   runtimes: SubscriptionRuntimeProbe[];
+  invocation?: SubscriptionRuntimeInvocationResult;
   warning?: string;
 }): string {
   const locale = input.locale ?? "en";
@@ -309,6 +311,13 @@ export function renderSubscriptionRuntimesPage(input: {
         )
         .join("")
     : `<p>${input.warning ? escapeHtml(input.warning) : "No local runtimes configured."}</p>`;
+  const invocation = input.invocation
+    ? `<article>
+        <h2>Invocation result</h2>
+        <p>${escapeHtml(input.invocation.status)} · ${escapeHtml(input.invocation.message)}</p>
+        <pre>${escapeHtml(input.invocation.stdout || input.invocation.stderr || "No output.")}</pre>
+      </article>`
+    : "";
 
   return renderShell({
     title: "ModelDock subscription runtimes",
@@ -326,6 +335,20 @@ export function renderSubscriptionRuntimesPage(input: {
     <section class="form-panel">
       <h2>Runtime status</h2>
       ${input.needsLogin ? `<p class="notice">Sign in to inspect local runtimes.</p>` : rows}
+      <form method="post" action="/subscription-runtimes/invoke">
+        <input type="hidden" name="csrfToken" value="${escapeAttribute(input.csrfToken ?? "")}">
+        <label>Runtime
+          <select name="runtimeId">
+            <option value="codex_local">Codex CLI</option>
+            <option value="claude_local">Claude Code CLI</option>
+          </select>
+        </label>
+        <label>Test prompt
+          <textarea name="prompt" rows="4" maxlength="4000" required>Reply with one short readiness sentence.</textarea>
+        </label>
+        <button type="submit">${renderIcon("terminal")}<span>Run test</span></button>
+      </form>
+      ${invocation}
     </section>
   </section>
 </main>`

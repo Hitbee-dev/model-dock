@@ -49,6 +49,7 @@ Optional command overrides:
 ```env
 MODELDOCK_CODEX_COMMAND=codex
 MODELDOCK_CLAUDE_COMMAND=claude
+MODELDOCK_RUNTIME_WORKDIR=/tmp
 ```
 
 ## Admin workflow
@@ -57,8 +58,27 @@ MODELDOCK_CLAUDE_COMMAND=claude
 2. Open **Runtimes**.
 3. Confirm whether each local CLI is disabled, missing, unauthenticated, ready,
    or errored.
-4. Keep the runtime disabled for users unless provider terms explicitly allow
+4. Run a short test prompt only from the protected admin surface.
+5. Keep the runtime disabled for users unless provider terms explicitly allow
    the intended use.
+
+## Invocation guardrails
+
+The current invocation path is intentionally narrow:
+
+- admin session and CSRF are required;
+- prompts are capped at 4000 characters;
+- output is capped and obvious token-shaped strings are redacted;
+- Codex runs through `codex exec` with read-only sandboxing, no approvals, and
+  ephemeral session storage;
+- Claude runs through `claude --print` with no session persistence and no tools;
+- shell interpolation is not used. Commands are executed with direct argv
+  arrays.
+
+This is a readiness test surface, not the final user chat runtime. The
+production design should move invocation into an isolated worker or sidecar with
+per-user runtime homes, concurrency limits, audit metadata, and explicit admin
+policy assignment before normal users can select it.
 
 ## Security rules
 

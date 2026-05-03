@@ -5,6 +5,7 @@ import {
   createSubscriptionRuntimeDefinitions,
   credentialEncryptionContext,
   deleteCredential,
+  invokeConfiguredSubscriptionRuntime,
   isSubscriptionOAuthEnabled,
   probeConfiguredSubscriptionRuntimes,
   rotateProviderCredential,
@@ -64,6 +65,56 @@ describe("BYOK contracts", () => {
     ]);
     expect(JSON.stringify(probes)).not.toContain("refresh");
     expect(JSON.stringify(probes)).not.toContain("access_token");
+  });
+
+  it("invokes ready local runtimes without returning obvious token material", async () => {
+    const calls: Array<{ args: string[]; command: string; cwd?: string }> = [];
+    const result = await invokeConfiguredSubscriptionRuntime(
+      {
+        experimentalSubscriptionOAuth: true,
+        experimentalChatGPTSubscription: true,
+        runtimeWorkingDirectory: "/tmp/modeldock-runtime"
+      },
+      async (command, args, _timeoutMs, options) => {
+        calls.push({ args, command, cwd: options?.cwd });
+        return calls.length === 1
+          ? { exitCode: 0, stdout: "Logged in using ChatGPT", stderr: "" }
+          : {
+              exitCode: 0,
+              stdout: "result access_token=secret-value sk-testsecretsecret",
+              stderr: "authorization: Bearer private-token"
+            };
+      },
+      { prompt: "Say hello", runtimeId: "codex_local" }
+    );
+
+    expect(calls).toHaveLength(2);
+    expect(calls[1]).toMatchObject({ command: "codex", cwd: "/tmp/modeldock-runtime" });
+    expect(calls[1]?.args).toEqual(
+      expect.arrayContaining(["exec", "--sandbox", "read-only", "--ask-for-approval", "never", "--ephemeral"])
+    );
+    expect(result).toMatchObject({ id: "codex_local", status: "completed" });
+    expect(result.stdout).toContain("access_token=[redacted]");
+    expect(result.stdout).not.toContain("secret-value");
+    expect(result.stderr).toContain("Bearer [redacted]");
+  });
+
+  it("blocks local runtime invocation when prompt is too large or flags are disabled", async () => {
+    const disabled = await invokeConfiguredSubscriptionRuntime({}, async () => ({ exitCode: 0, stdout: "", stderr: "" }), {
+      prompt: "hello",
+      runtimeId: "codex_local"
+    });
+    const tooLarge = await invokeConfiguredSubscriptionRuntime(
+      {
+        experimentalSubscriptionOAuth: true,
+        experimentalChatGPTSubscription: true
+      },
+      async () => ({ exitCode: 0, stdout: "Logged in using ChatGPT", stderr: "" }),
+      { prompt: "x".repeat(4001), runtimeId: "codex_local" }
+    );
+
+    expect(disabled).toMatchObject({ status: "blocked", message: "Feature flag is disabled." });
+    expect(tooLarge).toMatchObject({ status: "blocked", message: "Prompt exceeds the 4000 character limit." });
   });
 
   it("creates provider credential refs without exposing secrets", () => {

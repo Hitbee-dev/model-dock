@@ -33,6 +33,7 @@ data:
   EXPERIMENTAL_CLAUDE_SUBSCRIPTION: {{ .Values.config.experimentalClaudeSubscription | quote }}
   MODELDOCK_CODEX_COMMAND: {{ .Values.config.modeldockCodexCommand | quote }}
   MODELDOCK_CLAUDE_COMMAND: {{ .Values.config.modeldockClaudeCommand | quote }}
+  MODELDOCK_RUNTIME_WORKDIR: {{ .Values.config.modeldockRuntimeWorkdir | quote }}
   CLOUDFLARE_ACCESS_ENABLED: {{ .Values.config.cloudflareAccessEnabled | quote }}
   CLOUDFLARE_ACCESS_TEAM_DOMAIN: {{ .Values.config.cloudflareAccessTeamDomain | quote }}
   CLOUDFLARE_ACCESS_ALLOWED_AUDIENCES: {{ .Values.config.cloudflareAccessAllowedAudiences | quote }}

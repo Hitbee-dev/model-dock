@@ -11,14 +11,18 @@ export type {
 } from "./validation.js";
 export {
   createSubscriptionRuntimeDefinitions,
+  invokeConfiguredSubscriptionRuntime,
   probeConfiguredSubscriptionRuntimes,
   probeSubscriptionRuntime
 } from "./subscription-runtimes.js";
 export type {
   SubscriptionRuntimeCommandRunner,
+  SubscriptionRuntimeCommandOptions,
   SubscriptionRuntimeConfig,
   SubscriptionRuntimeDefinition,
   SubscriptionRuntimeId,
+  SubscriptionRuntimeInvocationInput,
+  SubscriptionRuntimeInvocationResult,
   SubscriptionRuntimeProbe,
   SubscriptionRuntimeStatus
 } from "./subscription-runtimes.js";

@@ -10,6 +10,7 @@ import {
   type PasswordHash
 } from "@modeldock/auth";
 import {
+  invokeConfiguredSubscriptionRuntime,
   probeConfiguredSubscriptionRuntimes,
   validateProviderConnection,
   type ProviderKind,
@@ -331,6 +332,45 @@ export function createApiHandler(options: ApiHandlerOptions) {
             options.subscriptionRuntimeRunner
           )
         });
+        return;
+      }
+
+      if (request.method === "POST" && request.url === "/experimental/subscription-runtimes/invoke") {
+        if (!(await authorizeAdminRequest(request, options)) || !(await getAdminSession(request, options))) {
+          sendJson(response, 403, { error: "admin_runtime_invocation_requires_admin_host_and_token" });
+          return;
+        }
+        const csrfToken = headerValue(request.headers["x-modeldock-csrf-token"]);
+        const session = await getAdminSession(request, options);
+        if (
+          !session ||
+          !csrfToken ||
+          !verifyTokenHash({ token: csrfToken, expectedHash: session.csrfTokenHash, secret: requireSessionSecret(options) })
+        ) {
+          sendJson(response, 403, { error: "csrf_required" });
+          return;
+        }
+        const decision = options.rateLimiter.allow(clientKey(request, "subscription-runtime-invoke"), {
+          limit: 5,
+          windowSeconds: 300
+        });
+        if (!decision.allowed) {
+          sendJson(response, 429, { error: "rate_limited", resetAt: decision.resetAt });
+          return;
+        }
+        if (!options.subscriptionRuntimeRunner) {
+          sendJson(response, 503, { error: "subscription_runtime_runner_not_configured" });
+          return;
+        }
+        const body = await readInput(request);
+        sendJson(
+          response,
+          200,
+          await invokeConfiguredSubscriptionRuntime(options.subscriptionRuntimeConfig ?? {}, options.subscriptionRuntimeRunner, {
+            prompt: body.prompt ?? "",
+            runtimeId: body.runtimeId === "claude_local" ? "claude_local" : "codex_local"
+          })
+        );
         return;
       }
 

@@ -1,5 +1,5 @@
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
-import type { SubscriptionRuntimeProbe } from "@modeldock/byok";
+import type { SubscriptionRuntimeInvocationResult, SubscriptionRuntimeProbe } from "@modeldock/byok";
 import { resolveLocaleFromHeaders } from "@modeldock/ui";
 import { createAdminAccessGate } from "./access.js";
 import {
@@ -48,8 +48,14 @@ function cookieValue(request: IncomingMessage, name: string): string | undefined
 
 async function readForm(request: IncomingMessage): Promise<URLSearchParams> {
   const chunks: Buffer[] = [];
+  let total = 0;
   for await (const chunk of request) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
+    total += buffer.byteLength;
+    if (total > 16_384) {
+      throw new Error("Form body is too large.");
+    }
+    chunks.push(buffer);
   }
   return new URLSearchParams(Buffer.concat(chunks).toString("utf8"));
 }
@@ -83,7 +89,7 @@ async function requireAdminSession(request: IncomingMessage): Promise<boolean> {
 function renderLoginRequired(request: IncomingMessage, response: ServerResponse) {
   const locale = resolveLocaleFromHeaders(request.headers);
   response.writeHead(401, { "content-type": "text/html; charset=utf-8" });
-  response.end(renderApprovalsPage({ approvals: [], locale, needsLogin: true }));
+  response.end(renderLoginPage(locale));
 }
 
 function hasValidFormCsrf(request: IncomingMessage, form: URLSearchParams): boolean {
@@ -94,6 +100,11 @@ function hasValidFormCsrf(request: IncomingMessage, form: URLSearchParams): bool
 async function renderHome(request: IncomingMessage, response: ServerResponse) {
   const locale = resolveLocaleFromHeaders(request.headers);
   const approvalsResponse = await apiFetch("/admin/approvals", request).catch(() => undefined);
+  if (!approvalsResponse || approvalsResponse.status === 403) {
+    response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    response.end(renderLoginPage(locale));
+    return;
+  }
   const approvals =
     approvalsResponse?.ok ? ((await approvalsResponse.json()) as { pending: PendingApproval[] }).pending : [];
   response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
@@ -101,8 +112,7 @@ async function renderHome(request: IncomingMessage, response: ServerResponse) {
     renderApprovalsPage({
       approvals,
       csrfToken: cookieValue(request, "modeldock_csrf"),
-      locale,
-      needsLogin: !approvalsResponse || approvalsResponse.status === 403
+      locale
     })
   );
 }
@@ -212,6 +222,53 @@ const server = createServer(async (request, response) => {
     response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
     response.end(
       renderSubscriptionRuntimesPage({
+        locale,
+        csrfToken: cookieValue(request, "modeldock_csrf"),
+        runtimes: body.runtimes,
+        warning: body.warning
+      })
+    );
+    return;
+  }
+
+  if (request.method === "POST" && request.url === "/subscription-runtimes/invoke") {
+    const form = await readForm(request);
+    if (!(await requireAdminSession(request))) {
+      renderLoginRequired(request, response);
+      return;
+    }
+    if (!hasValidFormCsrf(request, form)) {
+      response.writeHead(403, { "content-type": "text/html; charset=utf-8" });
+      response.end(renderForbiddenPage(locale));
+      return;
+    }
+
+    const runtimeResponse = await apiFetch("/experimental/subscription-runtimes/invoke", request, {
+      method: "POST",
+      headers: { "x-modeldock-csrf-token": cookieValue(request, "modeldock_csrf") ?? "" },
+      body: JSON.stringify({
+        prompt: String(form.get("prompt") ?? ""),
+        runtimeId: form.get("runtimeId") === "claude_local" ? "claude_local" : "codex_local"
+      })
+    }).catch(() => undefined);
+    const invocation = runtimeResponse?.ok
+      ? ((await runtimeResponse.json()) as SubscriptionRuntimeInvocationResult)
+      : ({
+          id: form.get("runtimeId") === "claude_local" ? "claude_local" : "codex_local",
+          message: "Runtime invocation unavailable.",
+          status: "failed",
+          stderr: "",
+          stdout: ""
+        } as SubscriptionRuntimeInvocationResult);
+    const statusResponse = await apiFetch("/experimental/subscription-runtimes", request).catch(() => undefined);
+    const body = statusResponse?.ok
+      ? ((await statusResponse.json()) as { runtimes: SubscriptionRuntimeProbe[]; warning?: string })
+      : { runtimes: [], warning: "runtime_status_unavailable" };
+    response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    response.end(
+      renderSubscriptionRuntimesPage({
+        csrfToken: cookieValue(request, "modeldock_csrf"),
+        invocation,
         locale,
         runtimes: body.runtimes,
         warning: body.warning

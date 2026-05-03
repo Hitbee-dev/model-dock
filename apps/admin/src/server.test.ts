@@ -33,6 +33,7 @@ describe("admin scaffold", () => {
 
     expect(page).toContain("admin/admin");
     expect(page).toContain('value="admin"');
+    expect(page).toContain('action="/login"');
   });
 
   it("allows admin access when either IP or device fingerprint matches", () => {
@@ -91,6 +92,8 @@ describe("admin scaffold", () => {
 
     expect(page).toContain("Codex CLI");
     expect(page).toContain("ready");
+    expect(page).toContain("/subscription-runtimes/invoke");
+    expect(page).toContain("Run test");
     expect(page).not.toContain("access_token");
   });
 });

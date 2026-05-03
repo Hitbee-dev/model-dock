@@ -9,9 +9,9 @@ import { createMemoryRagDocumentStore, createRagDocumentStoreFromEnv } from "./r
 import { createMemoryRateLimiter } from "./rate-limit.js";
 import { createMemoryRegistrationStore } from "./registrations.js";
 
-function runCliStatus(command: string, args: string[], timeoutMs: number) {
+function runCliStatus(command: string, args: string[], timeoutMs: number, options?: { cwd?: string }) {
   return new Promise<{ exitCode: number; stderr: string; stdout: string }>((resolve, reject) => {
-    execFile(command, args, { timeout: timeoutMs }, (error, stdout, stderr) => {
+    execFile(command, args, { cwd: options?.cwd, timeout: timeoutMs }, (error, stdout, stderr) => {
       if (error && "code" in error && error.code === "ENOENT") {
         reject(error);
         return;
@@ -117,7 +117,8 @@ const server = createServer(
       claudeCommand: process.env.MODELDOCK_CLAUDE_COMMAND,
       experimentalChatGPTSubscription: process.env.EXPERIMENTAL_CHATGPT_SUBSCRIPTION === "true",
       experimentalClaudeSubscription: process.env.EXPERIMENTAL_CLAUDE_SUBSCRIPTION === "true",
-      experimentalSubscriptionOAuth: process.env.EXPERIMENTAL_SUBSCRIPTION_OAUTH === "true"
+      experimentalSubscriptionOAuth: process.env.EXPERIMENTAL_SUBSCRIPTION_OAUTH === "true",
+      runtimeWorkingDirectory: process.env.MODELDOCK_RUNTIME_WORKDIR
     },
     subscriptionRuntimeRunner: runCliStatus
   })

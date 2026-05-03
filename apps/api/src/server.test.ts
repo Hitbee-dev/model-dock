@@ -415,6 +415,75 @@ describe("api scaffold", () => {
     });
   });
 
+  it("invokes experimental local runtimes only for admin sessions with csrf", async () => {
+    const calls: string[][] = [];
+    const handler = createTestHandler({
+      subscriptionRuntimeConfig: {
+        experimentalSubscriptionOAuth: true,
+        experimentalChatGPTSubscription: true,
+        experimentalClaudeSubscription: false
+      },
+      subscriptionRuntimeRunner: async (_command, args) => {
+        calls.push(args);
+        return calls.length === 1
+          ? { exitCode: 0, stdout: "Logged in using ChatGPT", stderr: "" }
+          : { exitCode: 0, stdout: "hello access_token=secret-value", stderr: "" };
+      },
+      users: [
+        {
+          id: "owner_1",
+          email: "owner@example.test",
+          role: "owner",
+          status: "active",
+          passwordHash: hashPassword({
+            password: "correct-password",
+            salt: Buffer.alloc(16),
+            iterations: 1
+          })
+        }
+      ]
+    });
+    const login = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/login",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "owner@example.test", password: "correct-password" })
+    });
+    const csrfToken = (login.body as { csrfToken: string }).csrfToken;
+
+    const missingCsrf = await invokeApi(handler, {
+      method: "POST",
+      url: "/experimental/subscription-runtimes/invoke",
+      headers: {
+        cookie: login.headers["set-cookie"] ?? "",
+        "content-type": "application/json",
+        "x-modeldock-admin-proxy": "true",
+        "x-modeldock-admin-token": "admin-secret"
+      },
+      body: JSON.stringify({ prompt: "hello", runtimeId: "codex_local" })
+    });
+    expect(missingCsrf.status).toBe(403);
+
+    const response = await invokeApi(handler, {
+      method: "POST",
+      url: "/experimental/subscription-runtimes/invoke",
+      headers: {
+        cookie: login.headers["set-cookie"] ?? "",
+        "content-type": "application/json",
+        "x-modeldock-admin-proxy": "true",
+        "x-modeldock-admin-token": "admin-secret",
+        "x-modeldock-csrf-token": csrfToken
+      },
+      body: JSON.stringify({ prompt: "hello", runtimeId: "codex_local" })
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ id: "codex_local", status: "completed" });
+    expect(JSON.stringify(response.body)).toContain("access_token=[redacted]");
+    expect(JSON.stringify(response.body)).not.toContain("secret-value");
+    expect(calls[1]).toEqual(expect.arrayContaining(["exec", "--sandbox", "read-only"]));
+  });
+
   it("turns approved signup requests into credential setup invitations", async () => {
     const registrations = createMemoryRegistrationStore();
     const authStore = createMemoryAuthStore([

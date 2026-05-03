@@ -76,8 +76,10 @@ http://127.0.0.1:3001/subscription-runtimes
 ```
 
 This page checks local CLI subscription runtimes such as Codex CLI and Claude
-Code CLI. It reports installation and login state only. It does not read or
-store OAuth tokens.
+Code CLI. It reports installation and login state and can run one short
+admin-only readiness prompt through a CSRF-protected test form. The test path
+uses direct process arguments, a bounded timeout, output truncation, and token
+redaction. It does not read or store OAuth tokens.
 
 Keep these runtimes disabled unless the provider terms explicitly allow the
 intended per-user use. See

@@ -93,6 +93,7 @@ config:
   experimentalClaudeSubscription: "false"
   modeldockCodexCommand: codex
   modeldockClaudeCommand: claude
+  modeldockRuntimeWorkdir: /tmp
   cloudflareAccessEnabled: "false"
   cloudflareAccessTeamDomain: team.cloudflareaccess.com
   cloudflareAccessAllowedAudiences: replace-with-cloudflare-access-audience
