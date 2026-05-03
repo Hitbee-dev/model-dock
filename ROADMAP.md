@@ -48,7 +48,7 @@
 
 ## Phase 4 - BYOK and provider vault
 
-- [ ] Implement provider connection UI.
+- [x] Implement provider connection UI.
 - [x] Store provider credentials encrypted at rest with AES-256-GCM adapter and AAD context.
 - [x] Validate user-owned API keys with minimal server-side requests.
 - [x] Add rate-limited API endpoint for provider validation.
