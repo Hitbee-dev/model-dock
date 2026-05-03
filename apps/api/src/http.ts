@@ -1,6 +1,9 @@
+import { createHash, randomBytes } from "node:crypto";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import {
+  canAccessAdmin,
   createSessionTokenPair,
+  hashPassword,
   renderSessionCookie,
   verifyPassword,
   verifyTokenHash,
@@ -17,7 +20,7 @@ import {
   type RagObjectDeletionClient,
   type RagVectorDeletionClient
 } from "./rag-documents.js";
-import { authorizeAdminRequest, isAdminHost } from "./security.js";
+import { authorizeAdminRequest, isAdminHost, isAuthorizedAdminRequest } from "./security.js";
 import type { AdminGuardOptions } from "./security.js";
 import type { RateLimiter } from "./rate-limit.js";
 import type { RegistrationStore } from "./registrations.js";
@@ -69,6 +72,18 @@ function requireSessionSecret(options: ApiHandlerOptions): string {
   return options.sessionSecret;
 }
 
+function createCredentialSetupToken(): { hash: string; token: string } {
+  const token = randomBytes(32).toString("base64url");
+  return {
+    token,
+    hash: createHash("sha256").update(token).digest("base64url")
+  };
+}
+
+function hashCredentialSetupToken(token: string): string {
+  return createHash("sha256").update(token).digest("base64url");
+}
+
 async function getCurrentSession(request: IncomingMessage, options: ApiHandlerOptions) {
   const token = parseCookies(request).get(sessionCookieName);
   if (!token) {
@@ -80,6 +95,11 @@ async function getCurrentSession(request: IncomingMessage, options: ApiHandlerOp
     sessionSecret: requireSessionSecret(options),
     now: new Date()
   });
+}
+
+async function getAdminSession(request: IncomingMessage, options: ApiHandlerOptions) {
+  const session = await getCurrentSession(request, options);
+  return session && canAccessAdmin(session.role) ? session : undefined;
 }
 
 export function createApiHandler(options: ApiHandlerOptions) {
@@ -144,7 +164,12 @@ export function createApiHandler(options: ApiHandlerOptions) {
           response,
           200,
           {
-            user: { id: user.id, email: user.email, role: user.role },
+            user: {
+              id: user.id,
+              email: user.email,
+              role: user.role,
+              mustChangePassword: user.mustChangePassword ?? false
+            },
             csrfToken: tokenPair.csrfToken,
             expiresAt: tokenPair.expiresAt
           },
@@ -160,6 +185,23 @@ export function createApiHandler(options: ApiHandlerOptions) {
         return;
       }
 
+      if (request.method === "POST" && request.url === "/auth/setup") {
+        const body = await readInput(request);
+        if (!body.email || !body.password || body.password !== body.passwordConfirmation || !body.setupToken) {
+          sendJson(response, 400, { error: "invalid_credential_setup" });
+          return;
+        }
+
+        const user = await options.authStore.completeCredentialSetup({
+          email: body.email,
+          passwordHash: hashPassword({ password: body.password }),
+          setupTokenHash: hashCredentialSetupToken(body.setupToken),
+          now: new Date().toISOString()
+        });
+        sendJson(response, 200, { user: { id: user.id, email: user.email, role: user.role } });
+        return;
+      }
+
       if (request.method === "GET" && request.url === "/auth/session") {
         const session = await getCurrentSession(request, options);
         if (!session) {
@@ -170,6 +212,53 @@ export function createApiHandler(options: ApiHandlerOptions) {
         sendJson(response, 200, {
           user: { id: session.userId, email: session.email, role: session.role },
           expiresAt: session.expiresAt
+        });
+        return;
+      }
+
+      if (request.method === "POST" && request.url === "/auth/credentials") {
+        const session = await getCurrentSession(request, options);
+        const csrfToken = headerValue(request.headers[csrfHeaderName]);
+        if (
+          !session ||
+          !csrfToken ||
+          !verifyTokenHash({
+            token: csrfToken,
+            expectedHash: session.csrfTokenHash,
+            secret: requireSessionSecret(options)
+          })
+        ) {
+          sendJson(response, 403, { error: "csrf_required" });
+          return;
+        }
+
+        const body = await readInput(request);
+        if (!body.email || !body.password || body.password !== body.passwordConfirmation) {
+          sendJson(response, 400, { error: "invalid_credentials_update" });
+          return;
+        }
+
+        const currentUser = await options.authStore.findActiveUserById(session.userId);
+        if (!currentUser) {
+          sendJson(response, 403, { error: "not_authenticated" });
+          return;
+        }
+        if (
+          !currentUser.mustChangePassword &&
+          (!body.currentPassword ||
+            !verifyPassword({ password: body.currentPassword, stored: currentUser.passwordHash }))
+        ) {
+          sendJson(response, 403, { error: "current_password_required" });
+          return;
+        }
+
+        const user = await options.authStore.updateOwnCredentials({
+          userId: session.userId,
+          email: body.email,
+          passwordHash: hashPassword({ password: body.password })
+        });
+        sendJson(response, 200, {
+          user: { id: user.id, email: user.email, role: user.role, mustChangePassword: user.mustChangePassword ?? false }
         });
         return;
       }
@@ -293,13 +382,14 @@ export function createApiHandler(options: ApiHandlerOptions) {
         return;
       }
 
-      if (request.url?.startsWith("/admin") && !isAdminHost(request, options.adminAppUrl)) {
+      const isAdminServiceProxy = isAuthorizedAdminRequest(request, options);
+      if (request.url?.startsWith("/admin") && !isAdminHost(request, options.adminAppUrl) && !isAdminServiceProxy) {
         sendJson(response, 404, { error: "admin_api_requires_dedicated_admin_host" });
         return;
       }
 
       if (request.method === "GET" && request.url === "/admin/approvals") {
-        if (!(await authorizeAdminRequest(request, options))) {
+        if (!(await authorizeAdminRequest(request, options)) || !(await getAdminSession(request, options))) {
           sendJson(response, 403, { error: "admin_approval_requires_admin_host_and_token" });
           return;
         }
@@ -308,12 +398,36 @@ export function createApiHandler(options: ApiHandlerOptions) {
       }
 
       if (request.method === "POST" && request.url?.startsWith("/admin/approvals/")) {
-        if (!(await authorizeAdminRequest(request, options))) {
+        const session = await getAdminSession(request, options);
+        const csrfToken = headerValue(request.headers[csrfHeaderName]);
+        if (
+          !(await authorizeAdminRequest(request, options)) ||
+          !session ||
+          !csrfToken ||
+          !verifyTokenHash({
+            token: csrfToken,
+            expectedHash: session.csrfTokenHash,
+            secret: requireSessionSecret(options)
+          })
+        ) {
           sendJson(response, 403, { error: "admin_approval_requires_admin_host_and_token" });
           return;
         }
         const id = request.url.split("/").at(3) ?? "";
-        sendJson(response, 200, { user: await options.registrations.approve(id, "admin") });
+        const approved = await options.registrations.approve(id, session.userId);
+        const setupToken = createCredentialSetupToken();
+        const setupTokenExpiresAt = new Date(Date.now() + 86_400_000).toISOString();
+        await options.authStore.markPendingCredentialSetup({
+          userId: approved.id,
+          email: approved.email,
+          setupTokenHash: setupToken.hash,
+          setupTokenExpiresAt
+        });
+        sendJson(response, 200, {
+          user: approved,
+          setupToken: setupToken.token,
+          setupTokenExpiresAt
+        });
         return;
       }
 

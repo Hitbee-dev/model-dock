@@ -6,8 +6,12 @@
 [![CLI package](https://img.shields.io/npm/v/@modeldock/cli?label=%40modeldock%2Fcli)](https://www.npmjs.com/package/@modeldock/cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
+![ModelDock 应用图标](apps/docs/public/modeldock-app-icon.png)
+
 ModelDock 是基于 LiteLLM 的开源控制平面，用于自托管的多用户 LLM 应用。
 它把模型提供商接入、BYOK 凭证、额度、预算、LiteLLM 路由、聊天界面、管理流程、MCP、技能和部署模板整合成一个可部署服务。
+
+ModelDock 不只是聊天界面。它从运营者问题出发：安全 onboarding、每用户 provider 凭证、额度、预算、审批、LiteLLM 编排、管理端隔离，以及默认本地的部署模式。
 
 ## ModelDock 是什么
 
@@ -64,6 +68,22 @@ Postgres:  默认仅限 Docker 内部网络
 - LiteLLM master key 和管理令牌不得发送到浏览器。
 - 默认不记录聊天内容、提供商 key、OAuth token、session token、authorization header 或 MCP secret payload。
 
+## Debug 与 Release 模式
+
+Debug 模式用于 localhost 测试。如果没有 active owner/admin，第一个管理账号会创建为 `admin/admin`，首次登录后会跳转到修改 ID 或 email 与密码的页面。可以取消，但默认账号会继续可用，因此只应短时间本地测试使用。
+
+Release 模式用于真实域名部署。它不会创建 `admin/admin`，空的管理 allowlist 会 fail closed。Kubernetes service 默认保持 `ClusterIP`，先只暴露普通用户页面。
+
+管理端访问在允许的 IP 或设备 fingerprint 任一匹配时通过。浏览器无法可靠读取真实客户端 MAC 地址，因此 MAC 条目是运营者管理的设备 fingerprint。
+
+## 注册审批
+
+用户从 Web app 提交注册请求，owner 或 admin 必须在 Admin app 中批准后才能使用服务。
+
+## 多语言 UI
+
+页面语言按 Cloudflare `CF-IPCountry`、浏览器 `Accept-Language`、英文默认值的顺序解析。当前支持与 README 翻译一致：英文、韩文、中文、日文、西班牙文、越南文、葡萄牙文。
+
 ## 核心领域
 
 | 领域 | 状态 |
@@ -79,6 +99,10 @@ Postgres:  默认仅限 Docker 内部网络
 ## 文档
 
 - [Docker 部署](docs/deployment/docker.md)
+- [快速开始](docs/quickstart.md)
+- [管理员指南](docs/admin-guide.md)
+- [用户指南](docs/user-guide.md)
+- [Debug 与 Release 模式](docs/deployment/modes.md)
 - [Cloudflare 部署](docs/deployment/cloudflare.md)
 - [LiteLLM 集成](docs/litellm.md)
 - [安全模型](docs/security.md)

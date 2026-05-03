@@ -1,4 +1,4 @@
-import { createMemoryAuthStore, type AuthUser } from "./auth-store.js";
+import { createMemoryAuthStore, type AuthStore, type AuthUser } from "./auth-store.js";
 import type { ChatCompletionStreamFetch, ChatRagRetriever } from "./chat-stream.js";
 import { createApiHandler } from "./http.js";
 import {
@@ -8,7 +8,7 @@ import {
   type RagVectorDeletionClient
 } from "./rag-documents.js";
 import { createMemoryRateLimiter } from "./rate-limit.js";
-import { createMemoryRegistrationStore } from "./registrations.js";
+import { createMemoryRegistrationStore, type RegistrationStore } from "./registrations.js";
 import type { ProviderValidationFetch } from "@modeldock/byok";
 
 async function* streamChunks(chunks: string[]): AsyncIterable<string> {
@@ -57,7 +57,9 @@ export async function invokeApi(
 
 export function createTestHandler(
   input: {
+    accessMode?: "debug" | "release";
     users?: AuthUser[];
+    authStore?: AuthStore;
     sessionSecret?: string;
     providerValidationFetch?: ProviderValidationFetch;
     chatCompletionFetch?: ChatCompletionStreamFetch;
@@ -65,12 +67,14 @@ export function createTestHandler(
     ragObjectStorage?: RagObjectDeletionClient;
     ragRetriever?: ChatRagRetriever;
     ragVectorStore?: RagVectorDeletionClient;
+    registrations?: RegistrationStore;
   } = {}
 ) {
   return createApiHandler({
+    accessMode: input.accessMode ?? "debug",
     adminAppUrl: "http://127.0.0.1:3001",
     adminApiToken: "admin-secret",
-    authStore: createMemoryAuthStore(input.users),
+    authStore: input.authStore ?? createMemoryAuthStore(input.users),
     chatCompletionFetch:
       input.chatCompletionFetch ??
       (async () => ({ ok: true, status: 200, body: streamChunks([": no stream configured\n", "data: [DONE]\n"]) })),
@@ -82,7 +86,7 @@ export function createTestHandler(
     ragRetriever: input.ragRetriever,
     ragVectorStore: input.ragVectorStore,
     rateLimiter: createMemoryRateLimiter(),
-    registrations: createMemoryRegistrationStore(),
+    registrations: input.registrations ?? createMemoryRegistrationStore(),
     secureCookies: false,
     sessionSecret: input.sessionSecret ?? "test-session-secret-that-is-at-least-32-bytes",
     sessionTtlSeconds: 3600

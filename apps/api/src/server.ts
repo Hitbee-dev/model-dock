@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { createCloudflareAccessVerifier } from "@modeldock/auth";
+import { createCloudflareAccessVerifier, hashPassword } from "@modeldock/auth";
 import { createMemoryAuthStore } from "./auth-store.js";
 import { createApiHandler } from "./http.js";
 import { createPostgresAuthStoreFromEnv } from "./postgres-auth-store.js";
@@ -10,6 +10,12 @@ import { createMemoryRegistrationStore } from "./registrations.js";
 
 const port = Number(process.env.PORT ?? 3002);
 const host = process.env.HOST ?? "127.0.0.1";
+const accessMode =
+  process.env.MODELDOCK_ACCESS_MODE === "debug" || process.env.MODELDOCK_ACCESS_MODE === "release"
+    ? process.env.MODELDOCK_ACCESS_MODE
+    : process.env.NODE_ENV === "production"
+      ? "release"
+      : "debug";
 
 const registrations = await createRegistrationStoreFromEnv({
   databaseUrl: process.env.DATABASE_URL,
@@ -22,6 +28,15 @@ const authStore = await createPostgresAuthStoreFromEnv({
   fallback: createMemoryAuthStore(),
   nodeEnv: process.env.NODE_ENV
 });
+if (accessMode === "debug") {
+  await authStore.ensureDebugAdmin?.({
+    email: process.env.MODELDOCK_DEBUG_ADMIN_EMAIL ?? "admin",
+    passwordHash: hashPassword({
+      password: process.env.MODELDOCK_DEBUG_ADMIN_PASSWORD ?? "admin",
+      unsafeAllowShortPassword: true
+    })
+  });
+}
 const ragDocumentStore = await createRagDocumentStoreFromEnv({
   databaseUrl: process.env.DATABASE_URL,
   fallback: createMemoryRagDocumentStore(),
@@ -52,6 +67,7 @@ async function* responseTextChunks(response: Response): AsyncIterable<string> {
 
 const server = createServer(
   createApiHandler({
+    accessMode,
     adminAppUrl: process.env.ADMIN_APP_URL ?? "http://127.0.0.1:3001",
     adminApiToken: process.env.ADMIN_API_TOKEN,
     authStore,

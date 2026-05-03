@@ -47,4 +47,5 @@ secrets:
   credentialEncryptionKey: local-credential-key-change-me-32b
   ownerBootstrapToken: local-owner-bootstrap-token-change-me
   adminApiToken: local-admin-api-token-change-me
+  debugAdminPassword: admin
   litellmMasterKey: local-litellm-master-key-change-me

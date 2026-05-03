@@ -7,6 +7,7 @@ import {
 } from "@modeldock/auth";
 
 export type AdminGuardOptions = {
+  accessMode?: "debug" | "release";
   adminAppUrl: string;
   adminApiToken?: string;
   cloudflareAccessConfig?: CloudflareAccessConfig;
@@ -35,7 +36,12 @@ export function isAuthorizedAdminRequest(request: IncomingMessage, options: Admi
   }
 
   const providedToken = headerValue(request.headers["x-modeldock-admin-token"]);
-  return Boolean(providedToken && isAdminHost(request, options.adminAppUrl) && constantTimeEquals(providedToken, token));
+  const isAdminProxy = headerValue(request.headers["x-modeldock-admin-proxy"]) === "true";
+  return Boolean(
+    providedToken &&
+      (isAdminHost(request, options.adminAppUrl) || isAdminProxy) &&
+      constantTimeEquals(providedToken, token)
+  );
 }
 
 export async function authorizeAdminRequest(request: IncomingMessage, options: AdminGuardOptions): Promise<boolean> {

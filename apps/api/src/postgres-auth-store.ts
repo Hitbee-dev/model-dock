@@ -18,6 +18,7 @@ type UserRow = {
   password_hash_iterations: number | null;
   password_hash_salt: string | null;
   password_hash_value: string | null;
+  must_change_password: boolean | null;
 };
 
 type SessionRow = {
@@ -56,7 +57,8 @@ function toAuthUser(row: UserRow | undefined): AuthUser | undefined {
       iterations: row.password_hash_iterations,
       salt: row.password_hash_salt,
       hash: row.password_hash_value
-    }
+    },
+    mustChangePassword: row.must_change_password ?? false
   };
 }
 
@@ -99,12 +101,164 @@ export function createPostgresAuthStore(client: QueryClient): AuthStore {
       const result = await client.query<UserRow>(
         `select id, email, role, status,
                 password_hash_algorithm, password_hash_iterations,
-                password_hash_salt, password_hash_value
+                password_hash_salt, password_hash_value, must_change_password
          from users
          where email = $1 and status = 'active'`,
         [normalizeEmail(email)]
       );
       return toAuthUser(result.rows[0]);
+    },
+    async findActiveUserById(id) {
+      const result = await client.query<UserRow>(
+        `select id, email, role, status,
+                password_hash_algorithm, password_hash_iterations,
+                password_hash_salt, password_hash_value, must_change_password
+         from users
+         where id = $1 and status = 'active'`,
+        [id]
+      );
+      return toAuthUser(result.rows[0]);
+    },
+    async completeCredentialSetup(input) {
+      const result = await client.query<UserRow>(
+        `update users
+         set status = 'active',
+             password_hash_algorithm = $3,
+             password_hash_iterations = $4,
+             password_hash_salt = $5,
+             password_hash_value = $6,
+             must_change_password = false,
+             credential_setup_token_hash = null,
+             credential_setup_expires_at = null
+         where email = $1
+           and status = 'pending_setup'
+           and credential_setup_token_hash = $2
+           and credential_setup_expires_at > $7
+         returning id, email, role, status,
+                   password_hash_algorithm, password_hash_iterations,
+                   password_hash_salt, password_hash_value, must_change_password`,
+        [
+          normalizeEmail(input.email),
+          input.setupTokenHash,
+          input.passwordHash.algorithm,
+          input.passwordHash.iterations,
+          input.passwordHash.salt,
+          input.passwordHash.hash,
+          input.now
+        ]
+      );
+      const user = toAuthUser(result.rows[0]);
+      if (!user) {
+        throw new Error("Credential setup token is invalid or expired.");
+      }
+      return user;
+    },
+    async ensureDebugAdmin(input) {
+      const existingAdmin = await client.query<UserRow>(
+        `select id, email, role, status,
+                password_hash_algorithm, password_hash_iterations,
+                password_hash_salt, password_hash_value, must_change_password
+         from users
+         where status = 'active' and role in ('owner', 'admin')
+         order by created_at asc
+         limit 1`
+      );
+      const adminUser = toAuthUser(existingAdmin.rows[0]);
+      if (adminUser) {
+        return adminUser;
+      }
+
+      const email = normalizeEmail(input.email);
+      const existing = await client.query<UserRow>(
+        `select id, email, role, status,
+                password_hash_algorithm, password_hash_iterations,
+                password_hash_salt, password_hash_value, must_change_password
+         from users
+         where email = $1 and status = 'active'`,
+        [email]
+      );
+      const existingUser = toAuthUser(existing.rows[0]);
+      if (existingUser) {
+        return existingUser;
+      }
+
+      const result = await client.query<UserRow>(
+        `insert into users (
+           id, email, display_name, status, role,
+           password_hash_algorithm, password_hash_iterations,
+           password_hash_salt, password_hash_value, must_change_password, created_at
+         )
+         values ($1, $2, 'Local administrator', 'active', 'owner', $3, $4, $5, $6, true, now())
+         on conflict (email) do update
+           set status = 'active',
+               role = 'owner',
+               password_hash_algorithm = excluded.password_hash_algorithm,
+               password_hash_iterations = excluded.password_hash_iterations,
+               password_hash_salt = excluded.password_hash_salt,
+               password_hash_value = excluded.password_hash_value,
+               must_change_password = true
+         returning id, email, role, status,
+                   password_hash_algorithm, password_hash_iterations,
+                   password_hash_salt, password_hash_value, must_change_password`,
+        [
+          "owner_debug_admin",
+          email,
+          input.passwordHash.algorithm,
+          input.passwordHash.iterations,
+          input.passwordHash.salt,
+          input.passwordHash.hash
+        ]
+      );
+      return toAuthUser(result.rows[0])!;
+    },
+    async updateOwnCredentials(input) {
+      const result = await client.query<UserRow>(
+        `update users
+         set email = $2,
+             password_hash_algorithm = $3,
+             password_hash_iterations = $4,
+             password_hash_salt = $5,
+             password_hash_value = $6,
+             must_change_password = false
+         where id = $1 and status = 'active'
+         returning id, email, role, status,
+                   password_hash_algorithm, password_hash_iterations,
+                   password_hash_salt, password_hash_value, must_change_password`,
+        [
+          input.userId,
+          normalizeEmail(input.email),
+          input.passwordHash.algorithm,
+          input.passwordHash.iterations,
+          input.passwordHash.salt,
+          input.passwordHash.hash
+        ]
+      );
+      const user = toAuthUser(result.rows[0]);
+      if (!user) {
+        throw new Error("User was not found.");
+      }
+      return user;
+    },
+    async markPendingCredentialSetup(input) {
+      await client.query(
+        `update users
+         set email = $2,
+             status = 'pending_setup',
+             credential_setup_token_hash = $3,
+             credential_setup_expires_at = $4,
+             password_hash_algorithm = null,
+             password_hash_iterations = null,
+             password_hash_salt = null,
+             password_hash_value = null,
+             must_change_password = false
+         where id = $1`,
+        [
+          input.userId,
+          normalizeEmail(input.email),
+          input.setupTokenHash,
+          input.setupTokenExpiresAt
+        ]
+      );
     },
     async saveSession(session) {
       await client.query(

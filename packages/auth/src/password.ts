@@ -12,9 +12,10 @@ const defaultIterations = 210_000;
 export function hashPassword(input: {
   password: string;
   iterations?: number;
+  unsafeAllowShortPassword?: boolean;
   salt?: Uint8Array;
 }): PasswordHash {
-  if (input.password.length < 12) {
+  if (!input.unsafeAllowShortPassword && input.password.length < 12) {
     throw new Error("Password must be at least 12 characters.");
   }
 

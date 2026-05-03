@@ -6,8 +6,12 @@
 [![CLI package](https://img.shields.io/npm/v/@modeldock/cli?label=%40modeldock%2Fcli)](https://www.npmjs.com/package/@modeldock/cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
+![ModelDock 앱 아이콘](apps/docs/public/modeldock-app-icon.png)
+
 ModelDock은 LiteLLM 기반의 셀프 호스팅 다중 사용자 LLM 앱을 위한 오픈소스 컨트롤 플레인입니다.
 프로바이더 연결, BYOK 자격 증명, 크레딧, 예산, LiteLLM 라우팅, 채팅 UI, 관리자 워크플로, MCP, 스킬, 배포 템플릿을 하나의 서비스로 묶습니다.
+
+ModelDock은 단순 채팅 화면보다 운영자 문제에서 출발합니다. 안전한 온보딩, 사용자별 프로바이더 키, 크레딧, 예산, 승인 게이트, LiteLLM 오케스트레이션, 관리자 분리, 로컬 기본 배포 모드를 함께 제공합니다.
 
 ## ModelDock이 하는 일
 
@@ -64,6 +68,22 @@ Postgres:  기본값은 Docker 내부 네트워크 전용
 - LiteLLM master key와 관리자 토큰은 브라우저에 전달되지 않아야 합니다.
 - 채팅 내용, 프로바이더 키, OAuth 토큰, 세션 토큰, 인증 헤더, MCP 비밀 payload는 로그에 남기지 않습니다.
 
+## 디버그 모드와 릴리스 모드
+
+디버그 모드는 localhost 테스트용입니다. 활성 owner/admin이 없으면 첫 관리자 계정은 `admin/admin`으로 생성되고, 첫 로그인 후 ID 또는 이메일과 비밀번호를 바꾸는 화면으로 이동합니다. 취소할 수 있지만 기본 계정이 계속 활성화되므로 짧은 로컬 테스트에만 사용해야 합니다.
+
+릴리스 모드는 실제 도메인 연결용입니다. `admin/admin`을 생성하지 않고, 빈 관리자 allowlist는 닫힌 상태로 동작합니다. Kubernetes 서비스는 기본적으로 `ClusterIP`로 유지하고, 먼저 일반 사용자 페이지부터 명시적으로 노출합니다.
+
+관리자 접근은 허용된 IP 또는 기기 fingerprint 중 하나가 일치하면 통과합니다. 웹 브라우저는 실제 클라이언트 MAC 주소를 안정적으로 제공하지 않으므로 MAC 항목은 운영자가 관리하는 기기 fingerprint로 취급합니다.
+
+## 회원가입 승인
+
+사용자는 사용자 앱에서 가입 요청을 제출하고, owner 또는 admin이 관리자 앱에서 승인해야 서비스를 사용할 수 있습니다.
+
+## 다국어 UI
+
+페이지 언어는 Cloudflare `CF-IPCountry`, 브라우저 `Accept-Language`, 영어 기본값 순서로 결정됩니다. 현재 README 번역 언어와 동일하게 영어, 한국어, 중국어, 일본어, 스페인어, 베트남어, 포르투갈어를 지원합니다.
+
 ## 핵심 영역
 
 | 영역 | 상태 |
@@ -79,6 +99,10 @@ Postgres:  기본값은 Docker 내부 네트워크 전용
 ## 문서
 
 - [Docker 배포](docs/deployment/docker.md)
+- [빠른 시작](docs/quickstart.md)
+- [관리자 가이드](docs/admin-guide.md)
+- [사용자 가이드](docs/user-guide.md)
+- [디버그/릴리스 모드](docs/deployment/modes.md)
 - [Cloudflare 배포](docs/deployment/cloudflare.md)
 - [LiteLLM 연동](docs/litellm.md)
 - [보안 모델](docs/security.md)

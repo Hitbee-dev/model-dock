@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { hashPassword } from "@modeldock/auth";
+import { createMemoryAuthStore } from "./auth-store.js";
 import { createMemoryRegistrationStore } from "./registrations.js";
 import { createMemoryRagDocumentStore } from "./rag-documents.js";
 import { authorizeAdminRequest, isAuthorizedAdminRequest } from "./security.js";
@@ -181,6 +182,249 @@ describe("api scaffold", () => {
     });
 
     expect(logout.status).toBe(200);
+  });
+
+  it("marks debug admin accounts for first-login credential changes", async () => {
+    const handler = createTestHandler({
+      users: [
+        {
+          id: "owner_debug_admin",
+          email: "admin",
+          role: "owner",
+          status: "active",
+          mustChangePassword: true,
+          passwordHash: hashPassword({
+            password: "admin",
+            salt: Buffer.alloc(16),
+            iterations: 1,
+            unsafeAllowShortPassword: true
+          })
+        }
+      ]
+    });
+
+    const login = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/login",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "admin", password: "admin" })
+    });
+
+    expect(login.status).toBe(200);
+    expect(login.body).toMatchObject({ user: { email: "admin", role: "owner", mustChangePassword: true } });
+  });
+
+  it("updates signed-in credentials and clears the first-login flag", async () => {
+    const handler = createTestHandler({
+      users: [
+        {
+          id: "owner_1",
+          email: "admin",
+          role: "owner",
+          status: "active",
+          mustChangePassword: true,
+          passwordHash: hashPassword({
+            password: "admin",
+            salt: Buffer.alloc(16),
+            iterations: 1,
+            unsafeAllowShortPassword: true
+          })
+        }
+      ]
+    });
+    const login = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/login",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "admin", password: "admin" })
+    });
+    const csrf = (login.body as { csrfToken: string }).csrfToken;
+    const update = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/credentials",
+      headers: {
+        cookie: login.headers["set-cookie"] ?? "",
+        "content-type": "application/json",
+        "x-modeldock-csrf-token": csrf
+      },
+      body: JSON.stringify({
+        email: "owner@example.test",
+        password: "new-admin-password",
+        passwordConfirmation: "new-admin-password"
+      })
+    });
+
+    expect(update.status).toBe(200);
+    expect(update.body).toMatchObject({
+      user: { email: "owner@example.test", role: "owner", mustChangePassword: false }
+    });
+  });
+
+  it("requires current password for regular credential changes", async () => {
+    const handler = createTestHandler({
+      users: [
+        {
+          id: "owner_1",
+          email: "owner@example.test",
+          role: "owner",
+          status: "active",
+          mustChangePassword: false,
+          passwordHash: hashPassword({
+            password: "current-password",
+            salt: Buffer.alloc(16),
+            iterations: 1
+          })
+        }
+      ]
+    });
+    const login = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/login",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "owner@example.test", password: "current-password" })
+    });
+    const csrf = (login.body as { csrfToken: string }).csrfToken;
+    const blocked = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/credentials",
+      headers: {
+        cookie: login.headers["set-cookie"] ?? "",
+        "content-type": "application/json",
+        "x-modeldock-csrf-token": csrf
+      },
+      body: JSON.stringify({
+        email: "owner-new@example.test",
+        password: "new-admin-password",
+        passwordConfirmation: "new-admin-password"
+      })
+    });
+
+    expect(blocked.status).toBe(403);
+
+    const updated = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/credentials",
+      headers: {
+        cookie: login.headers["set-cookie"] ?? "",
+        "content-type": "application/json",
+        "x-modeldock-csrf-token": csrf
+      },
+      body: JSON.stringify({
+        currentPassword: "current-password",
+        email: "owner-new@example.test",
+        password: "new-admin-password",
+        passwordConfirmation: "new-admin-password"
+      })
+    });
+
+    expect(updated.status).toBe(200);
+  });
+
+  it("allows release-mode admin proxy requests with admin session, csrf, and server token", async () => {
+    const handler = createTestHandler({
+      accessMode: "release",
+      users: [
+        {
+          id: "owner_1",
+          email: "owner@example.test",
+          role: "owner",
+          status: "active",
+          passwordHash: hashPassword({
+            password: "correct-password",
+            salt: Buffer.alloc(16),
+            iterations: 1
+          })
+        }
+      ]
+    });
+    const login = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/login",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "owner@example.test", password: "correct-password" })
+    });
+    const response = await invokeApi(handler, {
+      method: "GET",
+      url: "/admin/approvals",
+      headers: {
+        cookie: login.headers["set-cookie"] ?? "",
+        host: "127.0.0.1:3002",
+        "x-modeldock-admin-proxy": "true",
+        "x-modeldock-admin-token": "admin-secret"
+      }
+    });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({ pending: [] });
+  });
+
+  it("turns approved signup requests into credential setup invitations", async () => {
+    const registrations = createMemoryRegistrationStore();
+    const authStore = createMemoryAuthStore([
+      {
+        id: "owner_1",
+        email: "owner@example.test",
+        role: "owner",
+        status: "active",
+        passwordHash: hashPassword({
+          password: "correct-password",
+          salt: Buffer.alloc(16),
+          iterations: 1
+        })
+      }
+    ]);
+    const handler = createTestHandler({ authStore, registrations });
+    const signup = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/signup",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "new-user@example.test", displayName: "New User" })
+    });
+
+    expect(signup.status).toBe(202);
+    const registrationId = (signup.body as { registrationId: string }).registrationId;
+    const adminLogin = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/login",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "owner@example.test", password: "correct-password" })
+    });
+    const setupInvite = await invokeApi(handler, {
+      method: "POST",
+      url: `/admin/approvals/${registrationId}`,
+      headers: {
+        cookie: adminLogin.headers["set-cookie"] ?? "",
+        "content-type": "application/json",
+        "x-modeldock-admin-proxy": "true",
+        "x-modeldock-admin-token": "admin-secret",
+        "x-modeldock-csrf-token": (adminLogin.body as { csrfToken: string }).csrfToken
+      }
+    });
+
+    expect(setupInvite.status).toBe(200);
+    const setupToken = (setupInvite.body as { setupToken: string }).setupToken;
+    expect(setupToken).toBeTruthy();
+
+    const setup = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/setup",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        email: "new-user@example.test",
+        password: "new-user-password",
+        passwordConfirmation: "new-user-password",
+        setupToken
+      })
+    });
+    expect(setup.status).toBe(200);
+
+    const userLogin = await invokeApi(handler, {
+      method: "POST",
+      url: "/auth/login",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ email: "new-user@example.test", password: "new-user-password" })
+    });
+    expect(userLogin.status).toBe(200);
   });
 
   it("rate-limits invalid local login attempts", async () => {

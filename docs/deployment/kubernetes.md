@@ -79,6 +79,11 @@ Then open:
 - Admin app: `http://127.0.0.1:3001`
 - API health: `http://127.0.0.1:3002/healthz`
 
+Default debug admin credentials are `admin/admin`. The first login redirects to
+the account setup page so the owner can change the ID or email and password.
+Cancelling the setup keeps the debug credentials active and should only be used
+for temporary local testing.
+
 The local values file enables experimental subscription OAuth flags so the UI
 and config path can be exercised without provider API keys. These adapters are
 not a production promise: they must stay per-user, provider-terms aware, and
@@ -125,10 +130,14 @@ Before production:
 
 1. Use a private values file or `secrets.existingSecret`.
 2. Replace every `replace-with-*` value.
-3. Keep LiteLLM, database, Redis, Weaviate, and object storage internal.
-4. Expose user app, API, and admin through separate hostnames.
-5. Protect admin with Cloudflare Access or equivalent identity-aware access.
-6. Run `helm template` and review every rendered public endpoint.
+3. Set `config.accessMode=release`.
+4. Keep LiteLLM, database, Redis, Weaviate, and object storage internal.
+5. Expose the user app first; expose API only when the user app needs a public
+   API origin.
+6. Keep admin as a separate protected hostname and do not expose it until
+   Cloudflare Access or equivalent protection is configured.
+7. Configure `ADMIN_ALLOWED_IPS` and identity-aware access for admin operators.
+8. Run `helm template` and review every rendered public endpoint.
 
 ## Cloudflare transition
 
@@ -136,6 +145,9 @@ After localhost validation, keep the same chart and add only explicit ingress
 values for public surfaces. Do not expose LiteLLM, Postgres, Redis, Weaviate,
 or object storage. Admin should use a separate random admin hostname protected
 by Cloudflare Access, then still pass ModelDock role checks.
+
+See [debug and release modes](modes.md), [administrator guide](../admin-guide.md),
+and [user guide](../user-guide.md).
 
 ## Remaining hardening
 

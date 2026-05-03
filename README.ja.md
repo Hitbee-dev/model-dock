@@ -6,8 +6,12 @@
 [![CLI package](https://img.shields.io/npm/v/@modeldock/cli?label=%40modeldock%2Fcli)](https://www.npmjs.com/package/@modeldock/cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
+![ModelDock アプリアイコン](apps/docs/public/modeldock-app-icon.png)
+
 ModelDock は、LiteLLM を基盤にしたセルフホスト型マルチユーザー LLM アプリ向けのオープンソース control plane です。
 プロバイダー接続、BYOK 認証情報、クレジット、予算、LiteLLM ルーティング、チャット UI、管理ワークフロー、MCP、スキル、デプロイテンプレートを 1 つのサービスとしてまとめます。
+
+ModelDock は単なるチャット画面ではありません。安全な onboarding、ユーザー別 provider 認証情報、クレジット、予算、承認ゲート、LiteLLM orchestration、管理画面分離、ローカル既定のデプロイモードなど、運用者の問題から始まります。
 
 ## ModelDock とは
 
@@ -64,6 +68,22 @@ Postgres:  既定では Docker 内部ネットワークのみ
 - LiteLLM master key と管理トークンをブラウザへ送信してはいけません。
 - チャット内容、プロバイダーキー、OAuth token、session token、authorization header、MCP secret payload は既定でログに残しません。
 
+## Debug mode と Release mode
+
+Debug mode は localhost テスト用です。active owner/admin が存在しない場合、最初の管理者は `admin/admin` として作成され、初回ログイン後に ID または email と password の変更画面へ移動します。キャンセルはできますが、既定 credential は残るため短時間のローカル検証に限定してください。
+
+Release mode は実ドメイン接続用です。`admin/admin` は作成されず、空の管理 allowlist は fail closed します。Kubernetes service は既定で `ClusterIP` のままにし、まず一般ユーザー画面のみを公開します。
+
+管理アクセスは許可 IP または device fingerprint のどちらかが一致すると通過します。ブラウザは実際の client MAC address を安定して提供できないため、MAC 項目は運用者管理の device fingerprint として扱います。
+
+## サインアップ承認
+
+ユーザーは Web app から登録リクエストを送り、owner または admin が Admin app で承認してからサービスを利用できます。
+
+## 多言語 UI
+
+ページ言語は Cloudflare `CF-IPCountry`、ブラウザ `Accept-Language`、英語 fallback の順に解決します。現在は README 翻訳と同じく英語、韓国語、中国語、日本語、スペイン語、ベトナム語、ポルトガル語に対応します。
+
 ## 主要領域
 
 | 領域 | 状態 |
@@ -79,6 +99,10 @@ Postgres:  既定では Docker 内部ネットワークのみ
 ## ドキュメント
 
 - [Docker デプロイ](docs/deployment/docker.md)
+- [クイックスタート](docs/quickstart.md)
+- [管理者ガイド](docs/admin-guide.md)
+- [ユーザーガイド](docs/user-guide.md)
+- [Debug/Release mode](docs/deployment/modes.md)
 - [Cloudflare デプロイ](docs/deployment/cloudflare.md)
 - [LiteLLM 連携](docs/litellm.md)
 - [セキュリティモデル](docs/security.md)

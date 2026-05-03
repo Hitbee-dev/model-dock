@@ -1,18 +1,79 @@
-import { escapeAttribute, renderActionLink, renderIcon, renderShell } from "@modeldock/ui";
+import { escapeAttribute, renderActionLink, renderIcon, renderShell, type SupportedLocale } from "@modeldock/ui";
 
 export const localOnlyChatWarning =
   "Local-only chats stay in this browser and are not available on other devices. Export them before clearing browser data.";
 
-export function renderSignupPage(apiUrl: string): string {
+const homeCopy: Record<SupportedLocale, { eyebrow: string; title: string; body: string; chat: string; providers: string; signup: string }> = {
+  en: {
+    eyebrow: "LiteLLM-first control plane",
+    title: "Dock providers, budgets, and chats into one private service.",
+    body: "ModelDock gives operators a secure baseline for multi-user LLM apps with BYOK, credits, admin approvals, and calm chat workflows.",
+    chat: "Open chat",
+    providers: "Provider settings",
+    signup: "Request access"
+  },
+  ko: {
+    eyebrow: "LiteLLM 우선 컨트롤 플레인",
+    title: "공급자, 예산, 채팅을 하나의 비공개 서비스로 묶습니다.",
+    body: "ModelDock은 BYOK, 크레딧, 관리자 승인, 차분한 채팅 흐름을 갖춘 다중 사용자 LLM 앱의 안전한 기준선입니다.",
+    chat: "채팅 열기",
+    providers: "공급자 설정",
+    signup: "접근 요청"
+  },
+  zh: {
+    eyebrow: "LiteLLM 优先控制平面",
+    title: "把提供方、预算和聊天停靠到一个私有服务。",
+    body: "ModelDock 为多用户 LLM 应用提供 BYOK、额度、管理员审批和稳健聊天流程。",
+    chat: "打开聊天",
+    providers: "提供方设置",
+    signup: "请求访问"
+  },
+  ja: {
+    eyebrow: "LiteLLM ファーストの制御面",
+    title: "プロバイダー、予算、チャットを一つの非公開サービスに集約します。",
+    body: "ModelDock は BYOK、クレジット、管理者承認、落ち着いたチャット体験を備えた基盤です。",
+    chat: "チャットを開く",
+    providers: "プロバイダー設定",
+    signup: "アクセス申請"
+  },
+  es: {
+    eyebrow: "Plano de control con LiteLLM primero",
+    title: "Une proveedores, presupuestos y chats en un servicio privado.",
+    body: "ModelDock ofrece BYOK, creditos, aprobaciones administrativas y flujos de chat sobrios.",
+    chat: "Abrir chat",
+    providers: "Proveedores",
+    signup: "Solicitar acceso"
+  },
+  vi: {
+    eyebrow: "Mat phang dieu khien uu tien LiteLLM",
+    title: "Gom nha cung cap, ngan sach va chat vao mot dich vu rieng.",
+    body: "ModelDock cung cap BYOK, tin dung, phe duyet quan tri va luong chat gon gang.",
+    chat: "Mo chat",
+    providers: "Cau hinh nha cung cap",
+    signup: "Yeu cau truy cap"
+  },
+  pt: {
+    eyebrow: "Plano de controle com LiteLLM primeiro",
+    title: "Una provedores, orcamentos e chats em um servico privado.",
+    body: "ModelDock oferece BYOK, creditos, aprovacoes administrativas e fluxos de chat discretos.",
+    chat: "Abrir chat",
+    providers: "Provedores",
+    signup: "Solicitar acesso"
+  }
+};
+
+export function renderSignupPage(apiUrl: string, locale: SupportedLocale = "en"): string {
   const escapedApiUrl = escapeAttribute(apiUrl);
+  const copy = homeCopy[locale];
   return renderShell({
     title: "ModelDock signup",
     surface: "web",
     activePath: "/signup",
+    locale,
     body: `<main class="page">
   <section class="hero">
     <div>
-      <p class="eyebrow">Access control</p>
+      <p class="eyebrow">${copy.signup}</p>
       <h1>Request access to the workspace.</h1>
       <p>Self-registration stays closed by default. An operator reviews each request from the protected admin surface.</p>
     </div>
@@ -26,12 +87,67 @@ export function renderSignupPage(apiUrl: string): string {
   });
 }
 
-export function renderProviderSettingsPage(apiUrl: string): string {
+export function renderCredentialSetupPage(input: {
+  apiUrl: string;
+  email: string;
+  locale?: SupportedLocale;
+  setupToken: string;
+}): string {
+  const locale = input.locale ?? "en";
+  const escapedApiUrl = escapeAttribute(input.apiUrl);
+  return renderShell({
+    title: "ModelDock account setup",
+    surface: "web",
+    activePath: "/signup",
+    locale,
+    body: `<main class="page">
+  <section class="hero">
+    <div>
+      <p class="eyebrow">Approved access</p>
+      <h1>Set your password to finish account setup.</h1>
+      <p>Your administrator approved the request. This setup token is single use and expires soon.</p>
+    </div>
+    <form class="form-panel" id="credential-setup-form" data-api-url="${escapedApiUrl}">
+      <input type="hidden" name="setupToken" value="${escapeAttribute(input.setupToken)}">
+      <label>Email <input type="email" name="email" autocomplete="email" value="${escapeAttribute(input.email)}" required></label>
+      <label>Password <input type="password" name="password" autocomplete="new-password" required></label>
+      <label>Confirm password <input type="password" name="passwordConfirmation" autocomplete="new-password" required></label>
+      <button type="submit">${renderIcon("key")}<span>Finish setup</span></button>
+      <p id="credential-setup-result" role="status">Use the setup link from your administrator.</p>
+    </form>
+  </section>
+  <script>
+    const form = document.getElementById("credential-setup-form");
+    const result = document.getElementById("credential-setup-result");
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      result.textContent = "Saving credentials...";
+      const data = new FormData(form);
+      const response = await fetch(form.dataset.apiUrl + "/auth/setup", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email: data.get("email"),
+          password: data.get("password"),
+          passwordConfirmation: data.get("passwordConfirmation"),
+          setupToken: data.get("setupToken")
+        })
+      });
+      result.textContent = response.ok ? "Account setup complete. You can sign in when login is enabled." : "Setup failed or the token expired.";
+      if (response.ok) form.reset();
+    });
+  </script>
+</main>`
+  });
+}
+
+export function renderProviderSettingsPage(apiUrl: string, locale: SupportedLocale = "en"): string {
   const escapedApiUrl = escapeAttribute(apiUrl);
   return renderShell({
     title: "ModelDock providers",
     surface: "web",
     activePath: "/providers",
+    locale,
     body: `<main class="page">
   <section class="hero">
     <div>
@@ -85,12 +201,13 @@ export function renderProviderSettingsPage(apiUrl: string): string {
   });
 }
 
-export function renderChatPage(apiUrl: string): string {
+export function renderChatPage(apiUrl: string, locale: SupportedLocale = "en"): string {
   const escapedApiUrl = escapeAttribute(apiUrl);
   return renderShell({
     title: "ModelDock chat",
     surface: "web",
     activePath: "/chat",
+    locale,
     body: `<main class="page">
   <section class="chat-layout">
     <aside class="panel">
@@ -166,21 +283,23 @@ export function renderChatPage(apiUrl: string): string {
   });
 }
 
-export function renderHomePage(): string {
+export function renderHomePage(locale: SupportedLocale = "en"): string {
+  const copy = homeCopy[locale];
   return renderShell({
     title: "ModelDock",
     surface: "web",
     activePath: "/",
+    locale,
     body: `<main class="page">
   <section class="hero">
     <div>
-      <p class="eyebrow">LiteLLM-first control plane</p>
-      <h1>Dock providers, budgets, and chats into one private service.</h1>
-      <p>ModelDock gives operators a secure baseline for multi-user LLM apps with BYOK, credits, admin approvals, and calm chat workflows.</p>
+      <p class="eyebrow">${copy.eyebrow}</p>
+      <h1>${copy.title}</h1>
+      <p>${copy.body}</p>
       <div class="actions">
-        ${renderActionLink("/chat", "Open chat", "chat")}
-        ${renderActionLink("/providers", "Provider settings", "key")}
-        ${renderActionLink("/signup", "Request access", "approvals")}
+        ${renderActionLink("/chat", copy.chat, "chat")}
+        ${renderActionLink("/providers", copy.providers, "key")}
+        ${renderActionLink("/signup", copy.signup, "approvals")}
       </div>
     </div>
     <div class="panel">

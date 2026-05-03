@@ -6,8 +6,12 @@
 [![CLI package](https://img.shields.io/npm/v/@modeldock/cli?label=%40modeldock%2Fcli)](https://www.npmjs.com/package/@modeldock/cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
+![Biểu tượng ứng dụng ModelDock](apps/docs/public/modeldock-app-icon.png)
+
 ModelDock là control plane mã nguồn mở cho ứng dụng LLM tự host, nhiều người dùng, xây trên LiteLLM.
 Nó gom provider, thông tin xác thực BYOK, credit, ngân sách, định tuyến LiteLLM, giao diện chat, quy trình admin, MCP, skill và mẫu triển khai vào một dịch vụ có thể triển khai.
+
+ModelDock không chỉ là một màn hình chat. Nó bắt đầu từ bài toán vận hành: onboarding an toàn, credential theo từng người dùng, credit, ngân sách, phê duyệt, orchestration LiteLLM, tách admin và chế độ deploy mặc định local.
 
 ## ModelDock là gì
 
@@ -64,6 +68,22 @@ Postgres:  chỉ trong mạng Docker theo mặc định
 - LiteLLM master key và admin token không được gửi tới trình duyệt.
 - Không log nội dung chat, provider key, OAuth token, session token, authorization header hoặc MCP secret payload theo mặc định.
 
+## Chế độ debug và release
+
+Debug mode dùng cho localhost. Nếu chưa có owner/admin active, admin đầu tiên được tạo là `admin/admin` và lần login đầu sẽ chuyển tới trang đổi ID hoặc email và mật khẩu. Có thể hủy, nhưng credential mặc định vẫn hoạt động; chỉ dùng cho test local ngắn.
+
+Release mode dùng cho domain thật. Nó không tạo `admin/admin`, và admin allowlist rỗng sẽ fail closed. Kubernetes service giữ `ClusterIP` theo mặc định; chỉ expose trang người dùng trước.
+
+Admin access được cho phép khi IP hoặc device fingerprint khớp. Browser không đọc được MAC thật của client một cách đáng tin cậy, nên mục MAC là fingerprint do operator quản lý.
+
+## Phê duyệt đăng ký
+
+Người dùng gửi yêu cầu đăng ký từ web app. Owner hoặc admin phải phê duyệt trong admin app trước khi người dùng được truy cập dịch vụ.
+
+## UI đa ngôn ngữ
+
+Trang chọn ngôn ngữ theo Cloudflare `CF-IPCountry`, sau đó `Accept-Language`, rồi fallback tiếng Anh. Hiện hỗ trợ cùng bộ ngôn ngữ với README: tiếng Anh, Hàn, Trung, Nhật, Tây Ban Nha, Việt và Bồ Đào Nha.
+
 ## Phạm vi chính
 
 | Phạm vi | Trạng thái |
@@ -79,6 +99,10 @@ Postgres:  chỉ trong mạng Docker theo mặc định
 ## Tài liệu
 
 - [Triển khai Docker](docs/deployment/docker.md)
+- [Bắt đầu nhanh](docs/quickstart.md)
+- [Hướng dẫn admin](docs/admin-guide.md)
+- [Hướng dẫn người dùng](docs/user-guide.md)
+- [Debug và release mode](docs/deployment/modes.md)
 - [Triển khai Cloudflare](docs/deployment/cloudflare.md)
 - [Tích hợp LiteLLM](docs/litellm.md)
 - [Mô hình bảo mật](docs/security.md)

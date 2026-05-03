@@ -16,6 +16,11 @@ Use it when you need service-operator features such as signup, provider key
 management, LiteLLM virtual keys, credits, budgets, and admin workflows around a
 self-hosted LLM service.
 
+ModelDock is different from a plain chat workspace because it starts from the
+operator problem: safe onboarding, per-user provider credentials, credits,
+budgets, approval gates, LiteLLM orchestration, admin isolation, and deployment
+modes that are local by default and explicit when exposed.
+
 ## What is ModelDock?
 
 ModelDock is a LiteLLM-first baseline for running a private multi-user LLM service. It combines a user-facing chat experience, a control plane API, a separate admin surface, and LiteLLM as the model gateway.
@@ -48,7 +53,7 @@ ModelDock is not:
 - A payment processor.
 - A way to bypass provider rate limits, billing, or terms.
 - A tool for sharing one personal ChatGPT, Codex, Claude, Gemini, Copilot, Kimi, Qwen, or other subscription account across many users.
-- A direct fork, clone, or rebrand of OpenWebUI, LibreChat, or LiteLLM.
+- A direct fork, clone, or rebrand of another chat UI or gateway project.
 - A finished commercial hosting platform.
 
 The stable connection model is user-owned provider API keys, platform-owned API keys configured by the server owner, OpenAI-compatible endpoints, and LiteLLM-supported providers. Subscription OAuth adapters are experimental, per-user only, disabled by default, and never marketed as a way around provider API billing or terms.
@@ -143,6 +148,39 @@ Admin app:  https://admin-<random-slug>.modeldock.example.com
 
 Use Cloudflare Access or an equivalent identity-aware proxy, application-level role checks, MFA for admins, rate limits, and audit logs. Never rely on `/admin` as the only security boundary.
 
+## Debug and release modes
+
+Debug mode is for localhost testing. It seeds the first local owner as
+`admin/admin` when no active owner or admin exists, then redirects the first
+successful admin login to an account setup page. The setup can be cancelled for
+short local testing, but keeping `admin/admin` is not acceptable for a shared or
+domain-connected service.
+
+Release mode is for real deployments. It does not seed `admin/admin`, empty
+admin allowlists fail closed, and admin should remain private until a separate
+protected hostname, identity-aware access, app role checks, and MFA are in
+place. Kubernetes services stay `ClusterIP` by default; expose only the
+user-facing page first.
+
+Admin access can be allowlisted by IP address or device fingerprint. A request
+passes the allowlist when either value matches. Physical client MAC addresses
+are not reliably available to web apps, so device entries are operator-managed
+fingerprints rather than a browser-readable hardware guarantee.
+
+## Signup approval
+
+Public access is approval-gated. Users submit signup requests from the user app,
+then an owner or admin approves pending requests from the admin app before those
+users can access the service. Approval creates a setup invitation; the user must
+set a password before the account becomes login-capable.
+
+## Localization
+
+Public and admin pages resolve language from Cloudflare `CF-IPCountry`, then
+`Accept-Language`, then English fallback. Current UI language coverage matches
+the README translations: English, Korean, Chinese, Japanese, Spanish,
+Vietnamese, and Portuguese.
+
 ## Provider support
 
 | Provider | Connection type | MVP status |
@@ -183,13 +221,18 @@ ModelDock owns signup, auth, BYOK UI, credential vault, credit ledger, admin wor
 
 See [docs/litellm.md](docs/litellm.md) and [docs/litellm/compatibility.md](docs/litellm/compatibility.md).
 
-## Ecosystem context
+## Why use it
 
-| Project | Role in the ecosystem | Where ModelDock fits |
-| --- | --- | --- |
-| LiteLLM | LLM gateway, provider routing, virtual keys, spend tracking, budgets | ModelDock uses LiteLLM as the gateway layer and adds signup, chat UX, BYOK onboarding, credit UI, credential vault, and admin workflows around it. |
-| OpenWebUI | Self-hosted AI workspace and chat UI | ModelDock is designed as a service-operator control plane that can sit in the same self-hosted AI ecosystem. |
-| LibreChat | Self-hosted AI chat platform with multi-provider conversations, agents, and MCP | ModelDock is designed around LiteLLM-first service operations, BYOK, credits, budgets, and operator workflows. |
+ModelDock focuses on the operational surface around self-hosted LLM access:
+
+- Local-first install defaults that do not expose internal services by accident.
+- Separate user, API, and admin surfaces.
+- Approval-gated signup instead of open public registration.
+- BYOK and platform-key flows designed around encrypted storage.
+- Credits and budgets that map product rules to LiteLLM enforcement.
+- RAG infrastructure scaffolding with PostgreSQL, Redis, Weaviate, and
+  S3-compatible object storage.
+- MCP and skills foundations with permission prompts and secret separation.
 
 ## Security model
 
@@ -217,6 +260,10 @@ Public docs include:
 - [llms-full.txt](llms-full.txt)
 - [robots.txt](robots.txt)
 - [sitemap.xml](sitemap.xml)
+- [Quickstart](docs/quickstart.md)
+- [Administrator guide](docs/admin-guide.md)
+- [User guide](docs/user-guide.md)
+- [Debug and release modes](docs/deployment/modes.md)
 - [Discovery and indexing checklist](docs/discovery.md)
 - Markdown docs under [docs](docs)
 - Ecosystem context pages under [docs/comparisons](docs/comparisons)

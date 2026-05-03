@@ -38,6 +38,49 @@ type ShellOptions = {
   surface: ModelDockSurface;
   activePath?: string;
   body: string;
+  locale?: SupportedLocale;
+};
+
+export type SupportedLocale = "en" | "ko" | "zh" | "ja" | "es" | "vi" | "pt";
+
+const supportedLocales: readonly SupportedLocale[] = ["en", "ko", "zh", "ja", "es", "vi", "pt"];
+
+const navLabels: Record<SupportedLocale, Record<ModelDockSurface, string[][]>> = {
+  en: {
+    web: [["/", "Overview"], ["/chat", "Chat"], ["/providers", "Providers"], ["/signup", "Access"]],
+    admin: [["/", "Approvals"], ["/audit", "Audit"], ["/settings", "Settings"]],
+    api: []
+  },
+  ko: {
+    web: [["/", "개요"], ["/chat", "채팅"], ["/providers", "공급자"], ["/signup", "접근 요청"]],
+    admin: [["/", "승인"], ["/audit", "감사"], ["/settings", "설정"]],
+    api: []
+  },
+  zh: {
+    web: [["/", "概览"], ["/chat", "聊天"], ["/providers", "提供方"], ["/signup", "访问"]],
+    admin: [["/", "审批"], ["/audit", "审计"], ["/settings", "设置"]],
+    api: []
+  },
+  ja: {
+    web: [["/", "概要"], ["/chat", "チャット"], ["/providers", "プロバイダー"], ["/signup", "アクセス"]],
+    admin: [["/", "承認"], ["/audit", "監査"], ["/settings", "設定"]],
+    api: []
+  },
+  es: {
+    web: [["/", "Resumen"], ["/chat", "Chat"], ["/providers", "Proveedores"], ["/signup", "Acceso"]],
+    admin: [["/", "Aprobaciones"], ["/audit", "Auditoría"], ["/settings", "Ajustes"]],
+    api: []
+  },
+  vi: {
+    web: [["/", "Tổng quan"], ["/chat", "Chat"], ["/providers", "Nhà cung cấp"], ["/signup", "Truy cập"]],
+    admin: [["/", "Phê duyệt"], ["/audit", "Nhật ký"], ["/settings", "Cài đặt"]],
+    api: []
+  },
+  pt: {
+    web: [["/", "Visao geral"], ["/chat", "Chat"], ["/providers", "Provedores"], ["/signup", "Acesso"]],
+    admin: [["/", "Aprovacoes"], ["/audit", "Auditoria"], ["/settings", "Configuracoes"]],
+    api: []
+  }
 };
 
 const icons: Record<IconName, IconDefinition> = {
@@ -67,6 +110,37 @@ export function getSurfaceLabel(surface: ModelDockSurface): string {
   return "ModelDock API";
 }
 
+export function resolveLocaleFromHeaders(headers: Record<string, string | string[] | undefined>): SupportedLocale {
+  const country = Array.isArray(headers["cf-ipcountry"]) ? headers["cf-ipcountry"][0] : headers["cf-ipcountry"];
+  const byCountry: Record<string, SupportedLocale> = {
+    BR: "pt",
+    CN: "zh",
+    ES: "es",
+    JP: "ja",
+    KR: "ko",
+    MO: "zh",
+    PT: "pt",
+    TW: "zh",
+    VN: "vi"
+  };
+  if (country && byCountry[country.toUpperCase()]) {
+    return byCountry[country.toUpperCase()];
+  }
+
+  const language = Array.isArray(headers["accept-language"])
+    ? headers["accept-language"][0]
+    : headers["accept-language"];
+  for (const part of (language ?? "").split(",")) {
+    const tag = part.split(";")[0]?.trim().toLowerCase();
+    const base = tag?.split("-")[0] as SupportedLocale | undefined;
+    if (base && supportedLocales.includes(base)) {
+      return base;
+    }
+  }
+
+  return "en";
+}
+
 export function escapeHtml(value: string): string {
   return value
     .replaceAll("&", "&amp;")
@@ -91,22 +165,11 @@ export function renderIcon(name: IconName, label?: string): string {
 }
 
 export function renderShell(options: ShellOptions): string {
-  const nav =
-    options.surface === "admin"
-      ? [
-          ["/", "Approvals"],
-          ["/audit", "Audit"],
-          ["/settings", "Settings"]
-        ]
-      : [
-          ["/", "Overview"],
-          ["/chat", "Chat"],
-          ["/providers", "Providers"],
-          ["/signup", "Access"]
-        ];
+  const locale = options.locale ?? "en";
+  const nav = navLabels[locale][options.surface];
 
   return `<!doctype html>
-<html lang="en">
+<html lang="${locale}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -229,6 +292,15 @@ p { color: var(--muted); line-height: 1.65; margin: 0 0 16px; }
 .feature { align-items: flex-start; display: flex; gap: 12px; }
 .feature .md-icon { color: var(--ok); margin-top: 4px; }
 form { display: grid; gap: 16px; }
+.inline-form {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 8px 0;
+}
+.inline-form button { min-height: 36px; width: auto; }
 label { color: var(--text); display: grid; font-weight: 700; gap: 7px; }
 input, select, textarea {
   background: #fff;

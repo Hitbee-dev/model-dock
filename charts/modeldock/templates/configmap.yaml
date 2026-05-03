@@ -11,11 +11,17 @@ metadata:
     {{- include "modeldock.labels" . | nindent 4 }}
 data:
   NODE_ENV: {{ ternary "production" .Values.config.nodeEnv .Values.global.production | quote }}
+  MODELDOCK_ACCESS_MODE: {{ ternary "release" .Values.config.accessMode .Values.global.production | quote }}
   PUBLIC_SITE_URL: {{ .Values.urls.publicSiteUrl | quote }}
   PUBLIC_APP_URL: {{ .Values.urls.publicAppUrl | quote }}
   PUBLIC_API_URL: {{ .Values.urls.publicApiUrl | quote }}
   ADMIN_APP_URL: {{ .Values.urls.adminAppUrl | quote }}
   TRUSTED_ORIGINS: {{ .Values.urls.trustedOrigins | quote }}
+  ADMIN_ALLOWED_IPS: {{ .Values.config.adminAllowedIps | quote }}
+  ADMIN_ALLOWED_MACS: {{ .Values.config.adminAllowedMacs | quote }}
+  ADMIN_AUTO_ALLOW_HOST_NETWORK: {{ .Values.config.adminAutoAllowHostNetwork | quote }}
+  TRUSTED_PROXY_IPS: {{ .Values.config.trustedProxyIps | quote }}
+  MODELDOCK_DEBUG_ADMIN_EMAIL: {{ .Values.config.debugAdminEmail | quote }}
   PUBLIC_REGISTRATION_ENABLED: {{ .Values.config.publicRegistrationEnabled | quote }}
   ADMIN_BOOTSTRAP_ENABLED: {{ .Values.config.adminBootstrapEnabled | quote }}
   LOG_CHAT_CONTENT: {{ .Values.config.logChatContent | quote }}

@@ -6,8 +6,12 @@
 [![CLI package](https://img.shields.io/npm/v/@modeldock/cli?label=%40modeldock%2Fcli)](https://www.npmjs.com/package/@modeldock/cli)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
+![Ícone do app ModelDock](apps/docs/public/modeldock-app-icon.png)
+
 ModelDock é um control plane open source para apps LLM multiusuário e self-hosted construídos sobre LiteLLM.
 Ele reúne provedores, credenciais BYOK, créditos, orçamentos, roteamento LiteLLM, interfaces de chat, fluxos administrativos, MCP, skills e templates de deploy em um serviço implantável.
+
+ModelDock não começa como uma tela de chat simples. Ele começa pelo problema operacional: onboarding seguro, credenciais por usuário, créditos, orçamentos, aprovações, orquestração LiteLLM, separação admin e modos de deploy locais por padrão.
 
 ## O que é ModelDock
 
@@ -64,6 +68,22 @@ Postgres:  apenas rede interna Docker por padrão
 - LiteLLM master key e tokens admin não devem ir para o navegador.
 - Conteúdo de chat, provider keys, OAuth tokens, session tokens, authorization headers e MCP secret payloads não devem ser logados por padrão.
 
+## Modo debug e modo release
+
+Debug mode é para testes em localhost. Se não houver owner/admin ativo, o primeiro admin é criado como `admin/admin` e o primeiro login redireciona para alterar ID ou email e senha. É possível cancelar, mas as credenciais padrão continuam ativas; use apenas para testes locais breves.
+
+Release mode é para domínios reais. Ele não cria `admin/admin`, e uma allowlist admin vazia falha fechada. Serviços Kubernetes permanecem `ClusterIP` por padrão; exponha primeiro apenas a página de usuários.
+
+O acesso admin passa quando um IP permitido ou device fingerprint combina. O navegador não consegue ler a MAC real do cliente de forma confiável, então entradas MAC são fingerprints gerenciados pelo operador.
+
+## Aprovação de cadastro
+
+Usuários solicitam acesso pelo web app. Um owner ou admin precisa aprovar a solicitação no admin app antes que o usuário possa usar o serviço.
+
+## UI multilíngue
+
+As páginas resolvem idioma por Cloudflare `CF-IPCountry`, depois `Accept-Language`, e por fim inglês. O suporte atual acompanha as traduções do README: inglês, coreano, chinês, japonês, espanhol, vietnamita e português.
+
 ## Áreas principais
 
 | Área | Status |
@@ -79,6 +99,10 @@ Postgres:  apenas rede interna Docker por padrão
 ## Documentação
 
 - [Deploy Docker](docs/deployment/docker.md)
+- [Início rápido](docs/quickstart.md)
+- [Guia de administração](docs/admin-guide.md)
+- [Guia do usuário](docs/user-guide.md)
+- [Modos debug e release](docs/deployment/modes.md)
 - [Deploy Cloudflare](docs/deployment/cloudflare.md)
 - [Integração LiteLLM](docs/litellm.md)
 - [Modelo de segurança](docs/security.md)

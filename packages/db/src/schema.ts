@@ -9,6 +9,9 @@ export const postgresSchema = [
     password_hash_iterations integer,
     password_hash_salt text,
     password_hash_value text,
+    must_change_password boolean not null default false,
+    credential_setup_token_hash text,
+    credential_setup_expires_at timestamptz,
     created_at timestamptz not null,
     approved_at timestamptz,
     approved_by text
@@ -17,6 +20,9 @@ export const postgresSchema = [
   `alter table users add column if not exists password_hash_iterations integer`,
   `alter table users add column if not exists password_hash_salt text`,
   `alter table users add column if not exists password_hash_value text`,
+  `alter table users add column if not exists must_change_password boolean not null default false`,
+  `alter table users add column if not exists credential_setup_token_hash text`,
+  `alter table users add column if not exists credential_setup_expires_at timestamptz`,
   `create table if not exists sessions (
     id text primary key,
     user_id text not null references users(id),
