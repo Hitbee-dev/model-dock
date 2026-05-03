@@ -24,13 +24,16 @@
 - [ ] Add local login or OIDC-ready auth.
 - [x] Add role model: owner, admin, operator, user.
 - [ ] Add session security, CSRF protection, secure cookies, and auth rate limits.
-- [x] Enforce trusted admin-host checks in API scaffold.
+- [x] Enforce admin-host checks in API scaffold.
+- [x] Add persistent PostgreSQL-backed signup approval storage.
+- [x] Add public signup rate limiting scaffold.
 - [ ] Add Cloudflare Access validation middleware.
 
 ## Phase 3 - LiteLLM integration
 
 - [x] Implement LiteLLM user creation contract.
 - [x] Implement virtual key generation contract.
+- [x] Harden LiteLLM config rendering against YAML injection.
 - [x] Map ModelDock credits to LiteLLM budgets.
 - [x] Enforce model allowlist contract.
 - [x] Add spend sync ledger contract.
@@ -40,7 +43,7 @@
 ## Phase 4 - BYOK and provider vault
 
 - [ ] Implement provider connection UI.
-- [x] Store provider credentials encrypted at rest contract.
+- [x] Store provider credentials encrypted at rest with AES-256-GCM adapter and AAD context.
 - [ ] Validate user-owned API keys with minimal requests.
 - [x] Add credential deletion contract.
 - [ ] Add credential rotation implementation.
@@ -53,13 +56,14 @@
 - [x] Add local-only conversation mode contract.
 - [ ] Implement browser IndexedDB local-only storage and clear warnings.
 - [ ] Stream responses through LiteLLM.
-- [ ] Add export and import.
+- [x] Add server export/import and separate browser local-only export DTO.
 - [ ] Display calm reasoning summaries without exposing hidden chain-of-thought.
 
 ## Phase 5.5 - RAG
 
 - [x] Add RAG package contracts, chunking, and Weaviate retrieval planning.
-- [ ] Implement document upload ingestion.
+- [x] Add tenant-scoped document ingest and deletion plans.
+- [ ] Implement document upload ingestion endpoint and persistence.
 - [ ] Implement embedding generation through server-side provider routes.
 - [ ] Implement tenant-scoped retrieval injection for chat.
 - [ ] Add deletion propagation from object storage, PostgreSQL metadata, and Weaviate.
