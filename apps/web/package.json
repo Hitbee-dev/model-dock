@@ -22,6 +22,8 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run"
   },
-  "dependencies": {},
+  "dependencies": {
+    "@modeldock/ui": "workspace:*"
+  },
   "devDependencies": {}
 }

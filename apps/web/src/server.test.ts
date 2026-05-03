@@ -18,6 +18,15 @@ describe("web scaffold", () => {
     expect(renderHomePage()).toContain("/chat");
   });
 
+  it("renders a responsive app shell with functional icons", () => {
+    const page = renderHomePage();
+
+    expect(page).toContain('class="app-shell"');
+    expect(page).toContain("@media (max-width: 780px)");
+    expect(page).toContain("Dock providers, budgets, and chats");
+    expect(page).toContain("<svg");
+  });
+
   it("warns users before enabling local-only chat storage", () => {
     const page = renderHomePage();
 
