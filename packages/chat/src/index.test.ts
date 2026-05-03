@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { createConversation, exportConversation, importConversation, persistMessage } from "./index.js";
+import {
+  createConversation,
+  exportConversation,
+  exportLocalOnlyConversation,
+  importConversation,
+  persistMessage
+} from "./index.js";
 
 describe("chat storage contracts", () => {
   it("stores content for server conversations", () => {
@@ -138,5 +144,59 @@ describe("chat storage contracts", () => {
         }
       })
     ).toThrow("another conversation");
+  });
+
+  it("rejects local-only exports that include message content", () => {
+    const conversation = createConversation({
+      id: "chat_1",
+      userId: "user_1",
+      title: "Local",
+      storageMode: "local",
+      now: "2026-05-02T00:00:00.000Z"
+    });
+
+    expect(() =>
+      exportConversation({
+        conversation,
+        exportedAt: "2026-05-03T00:00:00.000Z",
+        messages: [
+          {
+            id: "msg_1",
+            conversationId: "chat_1",
+            userId: "user_1",
+            role: "user",
+            content: "private",
+            createdAt: conversation.createdAt
+          }
+        ]
+      })
+    ).toThrow("local-only");
+  });
+
+  it("exports local-only browser conversations with content through a separate DTO", () => {
+    const conversation = createConversation({
+      id: "chat_1",
+      userId: "user_1",
+      title: "Local",
+      storageMode: "local",
+      now: "2026-05-02T00:00:00.000Z"
+    });
+    const payload = exportLocalOnlyConversation({
+      conversation,
+      exportedAt: "2026-05-03T00:00:00.000Z",
+      messages: [
+        {
+          id: "msg_1",
+          conversationId: "chat_1",
+          userId: "user_1",
+          role: "user",
+          content: "private",
+          createdAt: conversation.createdAt
+        }
+      ]
+    });
+
+    expect(payload.conversation.storageMode).toBe("local");
+    expect(payload.messages[0]?.content).toBe("private");
   });
 });
