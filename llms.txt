@@ -15,8 +15,8 @@ ModelDock is useful for developers, homelab users, AI labs, and small teams that
 - [Security model](https://modeldock.example.com/docs/security.md): Credential storage, secret handling, user isolation, audit logs, and safe defaults.
 - [Cloudflare deployment](https://modeldock.example.com/docs/deployment/cloudflare.md): Tunnel, Access, WAF, TLS, and admin host separation.
 
-## Comparisons
+## Ecosystem context
 
-- [ModelDock vs OpenWebUI](https://modeldock.example.com/docs/comparisons/openwebui.md)
-- [ModelDock vs LibreChat](https://modeldock.example.com/docs/comparisons/librechat.md)
-- [ModelDock vs LiteLLM](https://modeldock.example.com/docs/comparisons/litellm.md)
+- [OpenWebUI integration context](https://modeldock.example.com/docs/comparisons/openwebui.md)
+- [LibreChat integration context](https://modeldock.example.com/docs/comparisons/librechat.md)
+- [LiteLLM integration context](https://modeldock.example.com/docs/comparisons/litellm.md)

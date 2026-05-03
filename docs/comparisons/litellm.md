@@ -1,4 +1,4 @@
-# ModelDock vs LiteLLM
+# LiteLLM Integration Context
 
 LiteLLM is the LLM gateway and proxy layer. ModelDock is the end-user and operator layer on top of LiteLLM.
 
@@ -10,7 +10,7 @@ LiteLLM is the LLM gateway and proxy layer. ModelDock is the end-user and operat
 - User and team budgets.
 - Spend tracking.
 
-## What ModelDock adds
+## What ModelDock manages around LiteLLM
 
 - Signup and auth.
 - BYOK provider settings.
