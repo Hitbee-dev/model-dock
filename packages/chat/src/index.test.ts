@@ -223,6 +223,14 @@ describe("chat storage contracts", () => {
     ).toEqual([{ type: "token", content: "Visible" }]);
   });
 
+  it("parses concise reasoning summaries without exposing raw reasoning", () => {
+    expect(
+      parseOpenAICompatibleSseLine(
+        'data: {"choices":[{"delta":{"reasoning_summary":{"summary":"Checked policy and selected a safe route."},"reasoning":"hidden"}}]}'
+      )
+    ).toEqual([{ type: "reasoning_summary", summary: "Checked policy and selected a safe route." }]);
+  });
+
   it("turns tool calls and malformed stream frames into safe UI events", () => {
     expect(parseOpenAICompatibleSseLine('data: {"choices":[{"delta":{"tool_calls":[]}}]}')).toEqual([
       { type: "status", status: "calling_tool", label: "Calling tool..." }

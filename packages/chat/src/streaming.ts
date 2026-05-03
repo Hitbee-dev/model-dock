@@ -12,6 +12,7 @@ type OpenAICompatibleChunk = {
     finish_reason?: string | null;
     delta?: {
       content?: unknown;
+      reasoning_summary?: unknown;
       reasoning?: unknown;
       reasoning_content?: unknown;
       tool_calls?: unknown;
@@ -29,6 +30,29 @@ function asRecord(value: unknown): Record<string, unknown> | undefined {
 
 function asString(value: unknown): string | undefined {
   return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function normalizeSummary(value: string): string | undefined {
+  const summary = value.replace(/\s+/g, " ").trim();
+  if (!summary) {
+    return undefined;
+  }
+
+  return summary.length > 800 ? `${summary.slice(0, 797)}...` : summary;
+}
+
+function safeReasoningSummary(value: unknown): string | undefined {
+  const direct = asString(value);
+  if (direct) {
+    return normalizeSummary(direct);
+  }
+
+  const record = asRecord(value);
+  if (!record) {
+    return undefined;
+  }
+
+  return normalizeSummary(asString(record.summary) ?? asString(record.text) ?? "");
 }
 
 function parseChunk(value: string): OpenAICompatibleChunk | undefined {
@@ -66,6 +90,10 @@ export function parseOpenAICompatibleSseLine(line: string): ChatStreamEvent[] {
       const token = asString(choice.delta?.content);
       if (token) {
         events.push({ type: "token", content: token });
+      }
+      const summary = safeReasoningSummary(choice.delta?.reasoning_summary);
+      if (summary) {
+        events.push({ type: "reasoning_summary", summary });
       }
       if (choice.delta?.tool_calls !== undefined) {
         events.push({ type: "status", status: "calling_tool", label: "Calling tool..." });

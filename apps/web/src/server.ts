@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { renderHomePage, renderProviderSettingsPage, renderSignupPage } from "./pages.js";
+import { renderChatPage, renderHomePage, renderProviderSettingsPage, renderSignupPage } from "./pages.js";
 
 const port = Number(process.env.PORT ?? 3000);
 const host = process.env.HOST ?? "127.0.0.1";
@@ -21,6 +21,12 @@ const server = createServer((request, response) => {
   if (request.url === "/providers") {
     response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
     response.end(renderProviderSettingsPage(apiUrl));
+    return;
+  }
+
+  if (request.url === "/chat") {
+    response.writeHead(200, { "content-type": "text/html; charset=utf-8" });
+    response.end(renderChatPage(apiUrl));
     return;
   }
 

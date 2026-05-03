@@ -81,6 +81,81 @@ export function renderProviderSettingsPage(apiUrl: string): string {
   );
 }
 
+export function renderChatPage(apiUrl: string): string {
+  const escapedApiUrl = escapeAttribute(apiUrl);
+  return htmlPage(
+    "ModelDock chat",
+    `<main>
+  <h1>Chat</h1>
+  <form id="chat-form" data-api-url="${escapedApiUrl}">
+    <label>Message <textarea name="message" rows="4" required></textarea></label>
+    <button type="submit">Send</button>
+  </form>
+  <p id="chat-status" role="status">Working...</p>
+  <article id="assistant-message" aria-live="polite"></article>
+  <details id="reasoning-details" hidden>
+    <summary>Reasoning summary</summary>
+    <p id="reasoning-summary"></p>
+  </details>
+  <script>
+    const chatForm = document.getElementById("chat-form");
+    const chatStatus = document.getElementById("chat-status");
+    const assistantMessage = document.getElementById("assistant-message");
+    const reasoningDetails = document.getElementById("reasoning-details");
+    const reasoningSummary = document.getElementById("reasoning-summary");
+
+    function applyStreamEvent(event) {
+      if (event.type === "token") {
+        assistantMessage.textContent += event.content;
+      }
+      if (event.type === "reasoning_summary" && typeof event.summary === "string") {
+        reasoningSummary.textContent = event.summary;
+        reasoningDetails.hidden = false;
+      }
+      if (event.type === "status") {
+        chatStatus.textContent = event.label;
+      }
+      if (event.type === "done") {
+        chatStatus.textContent = "Complete.";
+      }
+      if (event.type === "error") {
+        chatStatus.textContent = "Response failed.";
+      }
+    }
+
+    chatForm?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const data = new FormData(chatForm);
+      chatStatus.textContent = "Working...";
+      assistantMessage.textContent = "";
+      reasoningSummary.textContent = "";
+      reasoningDetails.hidden = true;
+      const response = await fetch(chatForm.dataset.apiUrl + "/chat/stream", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ messages: [{ role: "user", content: data.get("message") }] })
+      });
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      while (reader) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const frames = buffer.split("\\n\\n");
+        buffer = frames.pop() ?? "";
+        for (const frame of frames) {
+          const line = frame.split("\\n").find((part) => part.startsWith("data:"));
+          if (line) applyStreamEvent(JSON.parse(line.slice(5).trim()));
+        }
+      }
+    });
+  </script>
+</main>`
+  );
+}
+
 export function renderHomePage(): string {
   return htmlPage(
     "ModelDock",
@@ -94,6 +169,7 @@ export function renderHomePage(): string {
   </section>
   <a href="/signup">Request access</a>
   <a href="/providers">Provider settings</a>
+  <a href="/chat">Chat</a>
 </main>`
   );
 }
