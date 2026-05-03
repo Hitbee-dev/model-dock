@@ -25,6 +25,8 @@ Initial responsibilities:
 - Enforce model allowlists.
 - Sync spend back into the ModelDock ledger.
 
+The initial spend sync contract reads LiteLLM `/spend/logs`, normalizes rows into ledger-safe records, and drops prompt, response, hashed-key, and secret-bearing fields before callers receive the result.
+
 ## Security caveats
 
 Never expose the LiteLLM master key to browsers. Do not expose LiteLLM Admin UI publicly by default.
@@ -35,4 +37,4 @@ Never expose the LiteLLM master key to browsers. Do not expose LiteLLM Admin UI 
 - [Credits](credits.md)
 - [Security](security.md)
 
-Last updated: 2026-05-02
+Last updated: 2026-05-03

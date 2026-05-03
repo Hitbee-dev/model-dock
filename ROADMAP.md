@@ -23,11 +23,13 @@
 - [x] Implement one-time owner bootstrap contract backed by `OWNER_BOOTSTRAP_TOKEN`.
 - [ ] Add local login or OIDC-ready auth.
 - [x] Add role model: owner, admin, operator, user.
-- [ ] Add session security, CSRF protection, secure cookies, and auth rate limits.
+- [x] Add session token, CSRF token, and secure cookie helper contracts.
+- [ ] Wire auth rate limits into concrete login and session endpoints.
 - [x] Enforce admin-host checks in API scaffold.
 - [x] Add persistent PostgreSQL-backed signup approval storage.
 - [x] Add public signup rate limiting scaffold.
-- [ ] Add Cloudflare Access validation middleware.
+- [x] Add Cloudflare Access validation contract.
+- [ ] Wire Cloudflare Access validation into admin runtime middleware.
 
 ## Phase 3 - LiteLLM integration
 
@@ -37,6 +39,7 @@
 - [x] Map ModelDock credits to LiteLLM budgets.
 - [x] Enforce model allowlist contract.
 - [x] Add spend sync ledger contract.
+- [x] Add LiteLLM spend log normalization and client query contract.
 - [ ] Add live spend sync job.
 - [ ] Add mock and live LiteLLM integration tests.
 
@@ -44,7 +47,8 @@
 
 - [ ] Implement provider connection UI.
 - [x] Store provider credentials encrypted at rest with AES-256-GCM adapter and AAD context.
-- [ ] Validate user-owned API keys with minimal requests.
+- [x] Validate user-owned API keys with minimal server-side requests.
+- [x] Add rate-limited API endpoint for provider validation.
 - [x] Add credential deletion contract.
 - [ ] Add credential rotation implementation.
 - [ ] Add provider-specific docs for OpenAI, Anthropic, Gemini, OpenRouter, Ollama, and vLLM.
@@ -55,9 +59,11 @@
 - [x] Add server-stored conversation mode contract.
 - [x] Add local-only conversation mode contract.
 - [ ] Implement browser IndexedDB local-only storage and clear warnings.
-- [ ] Stream responses through LiteLLM.
+- [x] Add OpenAI-compatible streaming event parser contract.
+- [ ] Stream responses through LiteLLM from the API to the browser.
 - [x] Add server export/import and separate browser local-only export DTO.
-- [ ] Display calm reasoning summaries without exposing hidden chain-of-thought.
+- [x] Add stream contract that drops raw reasoning content by default.
+- [ ] Display calm reasoning summaries in the web UI when safe summaries exist.
 
 ## Phase 5.5 - RAG
 
@@ -65,7 +71,8 @@
 - [x] Add tenant-scoped document ingest and deletion plans.
 - [ ] Implement document upload ingestion endpoint and persistence.
 - [ ] Implement embedding generation through server-side provider routes.
-- [ ] Implement tenant-scoped retrieval injection for chat.
+- [x] Implement tenant-scoped retrieval injection contract for chat.
+- [ ] Wire tenant-scoped retrieval injection into the chat API.
 - [ ] Add deletion propagation from object storage, PostgreSQL metadata, and Weaviate.
 
 ## Phase 6 - MCP and skills
