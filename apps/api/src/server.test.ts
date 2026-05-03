@@ -236,4 +236,5 @@ describe("api scaffold", () => {
 
     expect(logout.status).toBe(403);
   });
+
 });

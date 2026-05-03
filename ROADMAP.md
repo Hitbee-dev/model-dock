@@ -63,7 +63,7 @@
 - [x] Add local-only conversation mode contract.
 - [x] Implement browser IndexedDB local-only storage and clear warnings.
 - [x] Add OpenAI-compatible streaming event parser contract.
-- [ ] Stream responses through LiteLLM from the API to the browser.
+- [x] Stream responses through LiteLLM from the API to the browser.
 - [x] Add server export/import and separate browser local-only export DTO.
 - [x] Add stream contract that drops raw reasoning content by default.
 - [ ] Display calm reasoning summaries in the web UI when safe summaries exist.

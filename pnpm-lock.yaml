@@ -46,6 +46,9 @@ importers:
       '@modeldock/byok':
         specifier: workspace:*
         version: link:../../packages/byok
+      '@modeldock/chat':
+        specifier: workspace:*
+        version: link:../../packages/chat
       '@modeldock/db':
         specifier: workspace:*
         version: link:../../packages/db

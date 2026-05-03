@@ -29,6 +29,21 @@ const cloudflareAccessConfig = {
   allowedEmails: (process.env.CLOUDFLARE_ACCESS_ALLOWED_EMAILS ?? "").split(",").filter(Boolean)
 };
 
+async function* responseTextChunks(response: Response): AsyncIterable<string> {
+  const reader = response.body?.getReader();
+  if (!reader) {
+    return;
+  }
+  const decoder = new TextDecoder();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) {
+      break;
+    }
+    yield decoder.decode(value, { stream: true });
+  }
+}
+
 const server = createServer(
   createApiHandler({
     adminAppUrl: process.env.ADMIN_APP_URL ?? "http://127.0.0.1:3001",
@@ -41,6 +56,16 @@ const server = createServer(
           fetch: async (url: string) => fetch(url)
         })
       : undefined,
+    chatCompletionFetch: async (url, init) => {
+      const response = await fetch(url, init);
+      return {
+        ok: response.ok,
+        status: response.status,
+        body: responseTextChunks(response)
+      };
+    },
+    litellmBaseUrl: process.env.LITELLM_BASE_URL,
+    litellmMasterKey: process.env.LITELLM_MASTER_KEY,
     providerValidationFetch: async (url, init) => fetch(url, init),
     rateLimiter: createMemoryRateLimiter(),
     registrations,

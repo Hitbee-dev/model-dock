@@ -24,12 +24,15 @@ Initial responsibilities:
 - Map user credits to LiteLLM budgets.
 - Enforce model allowlists.
 - Sync spend back into the ModelDock ledger.
+- Stream authenticated chat completions from LiteLLM to the browser without exposing the LiteLLM master key.
 
 The initial spend sync contract reads LiteLLM `/spend/logs`, normalizes rows into ledger-safe records, and drops prompt, response, hashed-key, and secret-bearing fields before callers receive the result.
 
 ## Security caveats
 
 Never expose the LiteLLM master key to browsers. Do not expose LiteLLM Admin UI publicly by default.
+
+Chat streaming must be server-mediated. The API authenticates the user session, sends the server-only LiteLLM key upstream, parses OpenAI-compatible SSE frames, drops raw reasoning fields, and emits safe browser SSE events.
 
 ## Related links
 
