@@ -38,7 +38,60 @@ kubectl config use-context orbstack
 kubectl get nodes
 ```
 
-Build local app images into OrbStack's Docker engine:
+### Local lifecycle scripts
+
+For day-to-day localhost work, use the repository scripts instead of repeating
+the raw Docker, Helm, and port-forward commands.
+
+```bash
+pnpm k8s:start
+pnpm k8s:status
+pnpm k8s:update
+pnpm k8s:stop
+```
+
+What they do:
+
+- `pnpm k8s:start` installs or scales up the Helm release, waits for
+  deployments and all-in-one StatefulSets, and starts localhost port-forwards
+  for web, admin, and API. It refuses to mutate non-OrbStack contexts or
+  non-debug values unless explicitly overridden. On a fresh machine it builds
+  missing local web/admin/API images before installing.
+- `pnpm k8s:update` rebuilds the local web/admin/API Docker images, reapplies
+  the chart, restarts deployments, waits for rollout, and refreshes localhost
+  port-forwards. It also restores locally stopped workloads before waiting.
+- `pnpm k8s:stop` stops tracked port-forwards and scales ModelDock deployments
+  and StatefulSets to zero. It preserves the namespace, Helm release, Secrets,
+  and PVCs so local data survives.
+- `pnpm k8s:status` shows pods, services, and tracked port-forward PIDs.
+
+Useful flags and environment variables:
+
+```bash
+pnpm k8s:update -- --dry-run
+MODELDOCK_SKIP_BUILD=1 pnpm k8s:update
+MODELDOCK_SKIP_PORT_FORWARD=1 pnpm k8s:start
+MODELDOCK_LOCAL_REPLICAS=2 pnpm k8s:start
+MODELDOCK_K8S_NAMESPACE=modeldock-dev pnpm k8s:start
+```
+
+By default, mutating commands require the active kube context to match
+`orbstack` and the selected values file to include `global.production: false`.
+For another local context, set `MODELDOCK_ALLOWED_K8S_CONTEXT_PATTERN`. Reserve
+`MODELDOCK_ALLOW_NONLOCAL_K8S=1` for cases where you have already reviewed the
+target cluster and values file.
+
+The local OrbStack values use one replica per app for a small laptop footprint.
+`pnpm k8s:update` uses Kubernetes rolling updates, but true no-downtime updates
+require at least two replicas for each public deployment plus enough node
+capacity. For production values, set `workloads.web.replicaCount`,
+`workloads.admin.replicaCount`, `workloads.api.replicaCount`, and
+`litellm.replicaCount` according to your availability target.
+
+### Manual equivalent
+
+If you need to debug the individual steps, build local app images into
+OrbStack's Docker engine:
 
 ```bash
 docker build -f docker/node-app.Dockerfile --build-arg APP_PATH=apps/web -t modeldock/web:local .

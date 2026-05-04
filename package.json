@@ -12,6 +12,10 @@
     "lint": "node scripts/lint-placeholder.mjs",
     "format": "node scripts/format-placeholder.mjs",
     "security:env": "node scripts/check-production-env.mjs",
+    "k8s:start": "node scripts/k8s-local.mjs start",
+    "k8s:stop": "node scripts/k8s-local.mjs stop",
+    "k8s:update": "node scripts/k8s-local.mjs update",
+    "k8s:status": "node scripts/k8s-local.mjs status",
     "typecheck": "pnpm build && pnpm -r --if-present typecheck",
     "test": "pnpm build && pnpm -r --if-present test",
     "prepare": "husky"
