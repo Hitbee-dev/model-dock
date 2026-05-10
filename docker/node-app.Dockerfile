@@ -1,4 +1,4 @@
-FROM node:22-alpine AS build
+FROM node:26-alpine AS build
 
 ARG APP_PATH
 WORKDIR /workspace
@@ -12,7 +12,7 @@ RUN corepack enable \
   && corepack pnpm install --prod=false --frozen-lockfile \
   && corepack pnpm --filter "./${APP_PATH}" build
 
-FROM node:22-alpine AS runtime
+FROM node:26-alpine AS runtime
 
 ARG APP_PATH
 WORKDIR /workspace/${APP_PATH}
